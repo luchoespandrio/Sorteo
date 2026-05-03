@@ -1,5 +1,4 @@
-import RoyalPlay from './royal-play.jsx'
-
+import RifasReal from './rifas-real.jsx'
 export default function App() {
-  return <RoyalPlay />
+  return <RifasReal />
 }

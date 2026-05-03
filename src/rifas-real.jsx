@@ -1,23 +1,23 @@
 import { useState, useEffect, useCallback } from "react";
-
-const YELLOW   = "#FFD700";
-const YELLOW2  = "#F0B90B";
-const BG       = "#0a0a0f";
-
+ 
+const YELLOW  = "#FFD700";
+const YELLOW2 = "#F0B90B";
+const BG      = "#0a0a0f";
+ 
 // ─── Data inicial ──────────────────────────────────────────────────────────────
 const USERS_INIT = [
-  {id:1, username:"admin",    password:"admin", credits:12430,isAdmin:true, name:"Admin",         avatar:"👑"},
-  {id:2, username:"juanperez",password:"1234",  credits:500,  isAdmin:false,name:"Juan Pérez",    avatar:"🎯"},
-  {id:3, username:"maria",    password:"1234",  credits:350,  isAdmin:false,name:"María García",  avatar:"🌟"},
-  {id:4, username:"carlos",   password:"1234",  credits:600,  isAdmin:false,name:"Carlos López",  avatar:"💎"},
-  {id:5, username:"ana",      password:"1234",  credits:200,  isAdmin:false,name:"Ana Torres",    avatar:"🎪"},
-  {id:6, username:"pablo",    password:"1234",  credits:450,  isAdmin:false,name:"Pablo Ruiz",    avatar:"🔥"},
-  {id:7, username:"lucia",    password:"1234",  credits:320,  isAdmin:false,name:"Lucía Soto",    avatar:"⚡"},
-  {id:8, username:"diego",    password:"1234",  credits:750,  isAdmin:false,name:"Diego Silva",   avatar:"🎭"},
-  {id:9, username:"sofia",    password:"1234",  credits:410,  isAdmin:false,name:"Sofía Pérez",   avatar:"🃏"},
-  {id:10,username:"marcos",   password:"1234",  credits:290,  isAdmin:false,name:"Marcos Díaz",   avatar:"🎲"},
+  {id:1, username:"admin",    password:"admin", credits:12430,isAdmin:true, name:"Admin",        avatar:"👑"},
+  {id:2, username:"juanperez",password:"1234",  credits:500,  isAdmin:false,name:"Juan Pérez",   avatar:"🎯"},
+  {id:3, username:"maria",    password:"1234",  credits:350,  isAdmin:false,name:"María García", avatar:"🌟"},
+  {id:4, username:"carlos",   password:"1234",  credits:600,  isAdmin:false,name:"Carlos López", avatar:"💎"},
+  {id:5, username:"ana",      password:"1234",  credits:200,  isAdmin:false,name:"Ana Torres",   avatar:"🎪"},
+  {id:6, username:"pablo",    password:"1234",  credits:450,  isAdmin:false,name:"Pablo Ruiz",   avatar:"🔥"},
+  {id:7, username:"lucia",    password:"1234",  credits:320,  isAdmin:false,name:"Lucía Soto",   avatar:"⚡"},
+  {id:8, username:"diego",    password:"1234",  credits:750,  isAdmin:false,name:"Diego Silva",  avatar:"🎭"},
+  {id:9, username:"sofia",    password:"1234",  credits:410,  isAdmin:false,name:"Sofía Pérez",  avatar:"🃏"},
+  {id:10,username:"marcos",   password:"1234",  credits:290,  isAdmin:false,name:"Marcos Díaz",  avatar:"🎲"},
 ];
-
+ 
 const RIFAS_INIT = [
   {
     id:1, name:"Moto 0KM", subtitle:"Yamaha FZ 150cc 0km",
@@ -40,14 +40,14 @@ const RIFAS_INIT = [
     drawDate:"2025-09-15", status:"active", numbers:{}
   },
 ];
-
+ 
 const CREDIT_REQUESTS_INIT = [
   {id:1,userId:4,userName:"Carlos López",amount:500, date:"08/03/2025",status:"pending"},
   {id:2,userId:5,userName:"Ana Torres",  amount:250, date:"08/03/2025",status:"pending"},
   {id:3,userId:6,userName:"Pablo Ruiz",  amount:1000,date:"07/03/2025",status:"pending"},
   {id:4,userId:7,userName:"Lucía Soto",  amount:750, date:"07/03/2025",status:"pending"},
 ];
-
+ 
 // ─── Toast ─────────────────────────────────────────────────────────────────────
 function Toast({notif}){
   if(!notif) return null;
@@ -63,7 +63,7 @@ function Toast({notif}){
     </div>
   );
 }
-
+ 
 // ─── Header ────────────────────────────────────────────────────────────────────
 function Header({currentUser, onLogout, onProfile, onLobby}){
   return(
@@ -106,7 +106,7 @@ function Header({currentUser, onLogout, onProfile, onLobby}){
     </header>
   );
 }
-
+ 
 // ─── Login ─────────────────────────────────────────────────────────────────────
 function LoginScreen({form, setForm, onLogin, error}){
   return(
@@ -129,8 +129,8 @@ function LoginScreen({form, setForm, onLogin, error}){
           <p style={{color:"rgba(255,255,255,.3)",fontSize:11,letterSpacing:4,marginTop:4,textTransform:"uppercase"}}>Sistema de Rifas</p>
         </div>
         {[
-          {key:"username",label:"USUARIO",   type:"text",     placeholder:"Ingresá tu usuario",     icon:"👤"},
-          {key:"password",label:"CONTRASEÑA",type:"password", placeholder:"Ingresá tu contraseña",  icon:"🔒"},
+          {key:"username",label:"USUARIO",   type:"text",    placeholder:"Ingresá tu usuario",    icon:"👤"},
+          {key:"password",label:"CONTRASEÑA",type:"password",placeholder:"Ingresá tu contraseña", icon:"🔒"},
         ].map(f=>(
           <div key={f.key} style={{marginBottom:14,textAlign:"left"}}>
             <label style={{color:"rgba(255,255,255,.5)",fontSize:11,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:6}}>{f.label}</label>
@@ -161,13 +161,12 @@ function LoginScreen({form, setForm, onLogin, error}){
     </div>
   );
 }
-
+ 
 // ─── Rifa Card ─────────────────────────────────────────────────────────────────
 function RifaCard({rifa, currentUser, onSelect, delay}){
   const sold     = Object.values(rifa.numbers).filter(n=>n.status==="vendido").length;
   const reserved = Object.values(rifa.numbers).filter(n=>n.status==="reservado").length;
-  const progress = sold + reserved;
-  const pct      = progress;
+  const pct      = sold + reserved;
   const myNums   = Object.entries(rifa.numbers).filter(([,v])=>v.userId===currentUser.id);
   return(
     <div onClick={()=>onSelect(rifa)} style={{
@@ -218,7 +217,7 @@ function RifaCard({rifa, currentUser, onSelect, delay}){
     </div>
   );
 }
-
+ 
 // ─── Lobby ─────────────────────────────────────────────────────────────────────
 function GameLobby({currentUser, rifas, onSelectRifa, onLogout, onProfile, onAdmin}){
   const [search, setSearch] = useState("");
@@ -262,16 +261,16 @@ function GameLobby({currentUser, rifas, onSelectRifa, onLogout, onProfile, onAdm
     </div>
   );
 }
-
+ 
 // ─── Number Grid ──────────────────────────────────────────────────────────────
 const NUM_COLORS = {
-  disponible: {bg:"rgba(255,255,255,.06)",color:"rgba(255,255,255,.7)", border:"rgba(255,255,255,.1)"},
-  selected:   {bg:"rgba(255,215,0,.18)",  color:YELLOW,                 border:"rgba(255,215,0,.55)"},
-  mine:       {bg:"rgba(0,200,83,.14)",   color:"#00C853",              border:"rgba(0,200,83,.38)"},
-  reservado:  {bg:"rgba(255,140,0,.13)",  color:"#FF8C00",              border:"rgba(255,140,0,.28)"},
-  vendido:    {bg:"rgba(255,50,50,.1)",   color:"rgba(255,100,100,.5)", border:"rgba(255,50,50,.18)"},
+  disponible:{bg:"rgba(255,255,255,.06)",  color:"rgba(255,255,255,.7)", border:"rgba(255,255,255,.1)"},
+  selected:  {bg:"rgba(255,215,0,.18)",    color:YELLOW,                 border:"rgba(255,215,0,.55)"},
+  mine:      {bg:"rgba(0,200,83,.14)",     color:"#00C853",              border:"rgba(0,200,83,.38)"},
+  reservado: {bg:"rgba(255,140,0,.13)",    color:"#FF8C00",              border:"rgba(255,140,0,.28)"},
+  vendido:   {bg:"rgba(255,50,50,.1)",     color:"rgba(255,100,100,.5)", border:"rgba(255,50,50,.18)"},
 };
-
+ 
 function StatRow({label,value,highlight,dim}){
   return(
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -282,7 +281,7 @@ function StatRow({label,value,highlight,dim}){
     </div>
   );
 }
-
+ 
 function NumberGrid({rifa, currentUser, onConfirm, onBack}){
   const [selected, setSelected] = useState([]);
   const getStatus = (i) => {
@@ -403,7 +402,7 @@ function NumberGrid({rifa, currentUser, onConfirm, onBack}){
     </div>
   );
 }
-
+ 
 // ─── Confirmation Modal ────────────────────────────────────────────────────────
 function ConfirmModal({rifa, numbers, currentUser, onConfirm, onCancel}){
   const total     = numbers.length * rifa.pricePerNumber;
@@ -462,7 +461,7 @@ function ConfirmModal({rifa, numbers, currentUser, onConfirm, onCancel}){
     </div>
   );
 }
-
+ 
 // ─── Profile / Mis Jugadas ─────────────────────────────────────────────────────
 function ProfileView({currentUser, rifas, onBack, onLogout}){
   const [tab, setTab] = useState("todas");
@@ -560,13 +559,16 @@ function ProfileView({currentUser, rifas, onBack, onLogout}){
     </div>
   );
 }
-
+ 
 // ─── Admin Panel ───────────────────────────────────────────────────────────────
 function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCreditRequests, onLogout, onLobby}){
-  const [tab,    setTab]    = useState("dashboard");
-  const [newRifa, setNewRifa] = useState({name:"",subtitle:"",icon:"🎁",pricePerNumber:50,prize:""});
-  const [editCredits, setEditCredits] = useState({id:null,val:""});
-
+  const [tab,          setTab]          = useState("dashboard");
+  const [newRifa,      setNewRifa]      = useState({name:"",subtitle:"",icon:"🎁",pricePerNumber:50,prize:"",drawDate:""});
+  const [editCredits,  setEditCredits]  = useState({id:null,val:""});
+  const [editUser,     setEditUser]     = useState(null);
+  const [editRifa,     setEditRifa]     = useState(null);
+  const [deleteConfirm,setDeleteConfirm]= useState(null);
+ 
   const approveCredit = id => {
     const req = creditRequests.find(r=>r.id===id);
     if(!req) return;
@@ -574,24 +576,142 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
     setCreditRequests(prev=>prev.map(r=>r.id===id?{...r,status:"approved"}:r));
   };
   const rejectCredit = id => setCreditRequests(prev=>prev.map(r=>r.id===id?{...r,status:"rejected"}:r));
-
+ 
   const createRifa = () => {
     if(!newRifa.name||!newRifa.prize) return;
     const id = Math.max(...rifas.map(r=>r.id))+1;
-    setRifas(prev=>[...prev,{id,...newRifa,totalNumbers:100,drawDate:"2025-12-31",status:"active",numbers:{}}]);
-    setNewRifa({name:"",subtitle:"",icon:"🎁",pricePerNumber:50,prize:""});
+    setRifas(prev=>[...prev,{id,...newRifa,status:"active",numbers:{}}]);
+    setNewRifa({name:"",subtitle:"",icon:"🎁",pricePerNumber:50,prize:"",drawDate:""});
   };
-
-  const pending   = creditRequests.filter(r=>r.status==="pending");
-  const totalCr   = users.reduce((s,u)=>s+u.credits,0);
-  const totalPart = rifas.reduce((s,r)=>s+Object.keys(r.numbers).length,0);
-
-  const inputStyle = {background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.09)",
+ 
+  const saveEditUser = () => {
+    if(!editUser) return;
+    setUsers(prev=>prev.map(u=>u.id===editUser.id?{...u,name:editUser.name,username:editUser.username,password:editUser.password}:u));
+    setEditUser(null);
+  };
+ 
+  const deleteUser = id => {
+    setUsers(prev=>prev.filter(u=>u.id!==id));
+    setDeleteConfirm(null);
+  };
+ 
+  const saveEditRifa = () => {
+    if(!editRifa) return;
+    setRifas(prev=>prev.map(r=>r.id===editRifa.id?{...r,...editRifa}:r));
+    setEditRifa(null);
+  };
+ 
+  const deleteRifa = id => {
+    setRifas(prev=>prev.filter(r=>r.id!==id));
+    setDeleteConfirm(null);
+  };
+ 
+  const pending  = creditRequests.filter(r=>r.status==="pending");
+  const totalCr  = users.reduce((s,u)=>s+u.credits,0);
+  const totalPart= rifas.reduce((s,r)=>s+Object.keys(r.numbers).length,0);
+ 
+  const inputStyle = {
+    background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.09)",
     borderRadius:7,padding:"9px 12px",color:"#fff",fontSize:13,outline:"none",
-    fontFamily:"'Barlow Condensed',sans-serif",width:"100%",boxSizing:"border-box"};
-
+    fontFamily:"'Barlow Condensed',sans-serif",width:"100%",boxSizing:"border-box"
+  };
+ 
+  const modalOverlay = {
+    position:"fixed",inset:0,zIndex:2000,background:"rgba(0,0,0,.85)",
+    backdropFilter:"blur(8px)",display:"flex",alignItems:"center",justifyContent:"center",
+    fontFamily:"'Barlow Condensed',sans-serif",padding:20
+  };
+ 
+  const modalBox = {
+    width:"min(420px,100%)",background:"#0d0d14",border:"1px solid rgba(255,255,255,.12)",
+    borderRadius:14,padding:"28px",boxShadow:"0 20px 60px rgba(0,0,0,.6)"
+  };
+ 
   return(
     <div style={{minHeight:"100vh",background:BG,fontFamily:"'Barlow Condensed',sans-serif"}}>
+ 
+      {/* ── Modal: Editar usuario ──────────────────────────────────────── */}
+      {editUser && (
+        <div style={modalOverlay} onClick={e=>e.target===e.currentTarget&&setEditUser(null)}>
+          <div style={modalBox}>
+            <h3 style={{fontFamily:"'Cinzel',serif",color:"#fff",fontSize:16,marginBottom:18}}>Editar Usuario</h3>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {[
+                {label:"Nombre completo",key:"name",    type:"text"},
+                {label:"Usuario",        key:"username",type:"text"},
+                {label:"Contraseña",     key:"password",type:"text"},
+              ].map(f=>(
+                <div key={f.key}>
+                  <label style={{color:"rgba(255,255,255,.4)",fontSize:11,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:5}}>{f.label}</label>
+                  <input type={f.type} value={editUser[f.key]} onChange={e=>setEditUser(p=>({...p,[f.key]:e.target.value}))} style={inputStyle}/>
+                </div>
+              ))}
+            </div>
+            <div style={{display:"flex",gap:10,marginTop:20}}>
+              <button onClick={()=>setEditUser(null)} style={{flex:1,padding:"10px",background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.09)",borderRadius:8,color:"rgba(255,255,255,.5)",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>Cancelar</button>
+              <button onClick={saveEditUser} style={{flex:2,padding:"10px",background:`linear-gradient(135deg,${YELLOW2},${YELLOW})`,border:"none",borderRadius:8,color:"#000",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Cinzel',serif",letterSpacing:1}}>Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+ 
+      {/* ── Modal: Editar rifa ─────────────────────────────────────────── */}
+      {editRifa && (
+        <div style={modalOverlay} onClick={e=>e.target===e.currentTarget&&setEditRifa(null)}>
+          <div style={modalBox}>
+            <h3 style={{fontFamily:"'Cinzel',serif",color:"#fff",fontSize:16,marginBottom:18}}>Editar Rifa</h3>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {[
+                {label:"Nombre",      key:"name",     type:"text"},
+                {label:"Descripción", key:"subtitle", type:"text"},
+                {label:"Premio",      key:"prize",    type:"text"},
+                {label:"Fecha sorteo",key:"drawDate", type:"date"},
+              ].map(f=>(
+                <div key={f.key}>
+                  <label style={{color:"rgba(255,255,255,.4)",fontSize:11,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:5}}>{f.label}</label>
+                  <input type={f.type} value={editRifa[f.key]||""} onChange={e=>setEditRifa(p=>({...p,[f.key]:e.target.value}))} style={inputStyle}/>
+                </div>
+              ))}
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+                <div>
+                  <label style={{color:"rgba(255,255,255,.4)",fontSize:11,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:5}}>Ícono</label>
+                  <input value={editRifa.icon||""} onChange={e=>setEditRifa(p=>({...p,icon:e.target.value}))} style={inputStyle}/>
+                </div>
+                <div>
+                  <label style={{color:"rgba(255,255,255,.4)",fontSize:11,letterSpacing:1,textTransform:"uppercase",display:"block",marginBottom:5}}>Precio/número</label>
+                  <input type="number" value={editRifa.pricePerNumber||0} onChange={e=>setEditRifa(p=>({...p,pricePerNumber:+e.target.value}))} style={inputStyle}/>
+                </div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:10,marginTop:20}}>
+              <button onClick={()=>setEditRifa(null)} style={{flex:1,padding:"10px",background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.09)",borderRadius:8,color:"rgba(255,255,255,.5)",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>Cancelar</button>
+              <button onClick={saveEditRifa} style={{flex:2,padding:"10px",background:`linear-gradient(135deg,${YELLOW2},${YELLOW})`,border:"none",borderRadius:8,color:"#000",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Cinzel',serif",letterSpacing:1}}>Guardar</button>
+            </div>
+          </div>
+        </div>
+      )}
+ 
+      {/* ── Modal: Confirmar borrado ───────────────────────────────────── */}
+      {deleteConfirm && (
+        <div style={modalOverlay} onClick={e=>e.target===e.currentTarget&&setDeleteConfirm(null)}>
+          <div style={{...modalBox,textAlign:"center"}}>
+            <div style={{fontSize:44,marginBottom:12}}>⚠️</div>
+            <h3 style={{fontFamily:"'Cinzel',serif",color:"#fff",fontSize:16,marginBottom:8}}>
+              {deleteConfirm.type==="user"?"¿Eliminar usuario?":"¿Eliminar rifa?"}
+            </h3>
+            <p style={{color:"rgba(255,255,255,.38)",fontSize:13,marginBottom:22}}>Esta acción no se puede deshacer.</p>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setDeleteConfirm(null)} style={{flex:1,padding:"10px",background:"rgba(255,255,255,.04)",border:"1px solid rgba(255,255,255,.09)",borderRadius:8,color:"rgba(255,255,255,.5)",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontSize:13}}>Cancelar</button>
+              <button onClick={()=>deleteConfirm.type==="user"?deleteUser(deleteConfirm.id):deleteRifa(deleteConfirm.id)}
+                style={{flex:1,padding:"10px",background:"rgba(255,50,50,.12)",border:"1px solid rgba(255,50,50,.35)",borderRadius:8,color:"#FF6464",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"}}>
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+ 
+      {/* ── Header ────────────────────────────────────────────────────── */}
       <header style={{background:"#0d0d14",borderBottom:"1px solid rgba(78,205,196,.18)",
         padding:"0 24px",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",
         position:"sticky",top:0,zIndex:100}}>
@@ -600,25 +720,22 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
           <span style={{fontFamily:"'Cinzel',serif",fontSize:15,fontWeight:700,color:"#4ECDC4",letterSpacing:3}}>PANEL ADMIN</span>
         </div>
         <div style={{display:"flex",gap:10}}>
-          <button onClick={onLobby} style={{background:"rgba(255,215,0,.07)",border:"1px solid rgba(255,215,0,.22)",
-            color:YELLOW,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontSize:12,
-            fontFamily:"'Barlow Condensed',sans-serif"}}>← Rifas</button>
-          <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,100,100,.28)",
-            color:"#FF6464",padding:"6px 14px",borderRadius:6,cursor:"pointer",fontSize:12,
-            fontFamily:"'Barlow Condensed',sans-serif"}}>Salir</button>
+          <button onClick={onLobby} style={{background:"rgba(255,215,0,.07)",border:"1px solid rgba(255,215,0,.22)",color:YELLOW,padding:"6px 14px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}>← Rifas</button>
+          <button onClick={onLogout} style={{background:"transparent",border:"1px solid rgba(255,100,100,.28)",color:"#FF6464",padding:"6px 14px",borderRadius:6,cursor:"pointer",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}>Salir</button>
         </div>
       </header>
+ 
       <main style={{maxWidth:1100,margin:"0 auto",padding:"28px 24px"}}>
+ 
         {/* Stats */}
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(190px,1fr))",gap:12,marginBottom:22}}>
           {[
-            {label:"Jugadores",     val:users.filter(u=>!u.isAdmin).length, icon:"👥", c:"#4ECDC4"},
-            {label:"Rifas activas", val:rifas.filter(r=>r.status==="active").length, icon:"🎫", c:YELLOW},
-            {label:"Créditos emitidos", val:totalCr.toLocaleString(), icon:"💰", c:"#00C853"},
-            {label:"Participaciones",   val:totalPart, icon:"🎯", c:"#FF8C00"},
+            {label:"Jugadores",         val:users.filter(u=>!u.isAdmin).length,              icon:"👥",c:"#4ECDC4"},
+            {label:"Rifas activas",     val:rifas.filter(r=>r.status==="active").length,      icon:"🎫",c:YELLOW},
+            {label:"Créditos emitidos", val:totalCr.toLocaleString(),                         icon:"💰",c:"#00C853"},
+            {label:"Participaciones",   val:totalPart,                                         icon:"🎯",c:"#FF8C00"},
           ].map(s=>(
-            <div key={s.label} style={{background:"#0d0d14",border:`1px solid ${s.c}1a`,borderRadius:10,
-              padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
+            <div key={s.label} style={{background:"#0d0d14",border:`1px solid ${s.c}1a`,borderRadius:10,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
               <span style={{fontSize:24}}>{s.icon}</span>
               <div>
                 <p style={{color:"rgba(255,255,255,.32)",fontSize:10,letterSpacing:1.5,textTransform:"uppercase",marginBottom:1}}>{s.label}</p>
@@ -627,6 +744,7 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
             </div>
           ))}
         </div>
+ 
         {/* Tabs */}
         <div style={{display:"flex",gap:6,marginBottom:16}}>
           {[["dashboard","Dashboard"],["users","👥 Usuarios"],["rifas","🎫 Rifas"]].map(([val,label])=>(
@@ -640,24 +758,21 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
             </button>
           ))}
         </div>
-
-        {/* Dashboard */}
+ 
+        {/* ── Tab: Dashboard ──────────────────────────────────────────── */}
         {tab==="dashboard" && (
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-            {/* Credit requests */}
             <div style={{background:"#0d0d14",border:"1px solid rgba(255,255,255,.07)",borderRadius:12,padding:"18px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
                 <h3 style={{color:"#fff",fontSize:14,fontFamily:"'Cinzel',serif"}}>Solicitudes de crédito</h3>
-                {pending.length>0&&<span style={{background:"rgba(255,140,0,.12)",border:"1px solid rgba(255,140,0,.28)",
-                  borderRadius:10,padding:"2px 8px",color:"#FF8C00",fontSize:11}}>{pending.length} pendientes</span>}
+                {pending.length>0&&<span style={{background:"rgba(255,140,0,.12)",border:"1px solid rgba(255,140,0,.28)",borderRadius:10,padding:"2px 8px",color:"#FF8C00",fontSize:11}}>{pending.length} pendientes</span>}
               </div>
               {creditRequests.filter(r=>r.status!=="rejected").length===0?(
                 <p style={{color:"rgba(255,255,255,.18)",fontSize:13,textAlign:"center",padding:"20px 0"}}>Sin solicitudes pendientes</p>
               ):(
                 <div style={{display:"flex",flexDirection:"column",gap:7}}>
                   {creditRequests.filter(r=>r.status!=="rejected").map(req=>(
-                    <div key={req.id} style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(255,255,255,.06)",
-                      borderRadius:8,padding:"9px 12px",display:"flex",alignItems:"center",gap:10}}>
+                    <div key={req.id} style={{background:"rgba(255,255,255,.02)",border:"1px solid rgba(255,255,255,.06)",borderRadius:8,padding:"9px 12px",display:"flex",alignItems:"center",gap:10}}>
                       <div style={{flex:1}}>
                         <p style={{color:"#fff",fontSize:13,fontWeight:600}}>{req.userName}</p>
                         <p style={{color:"rgba(255,255,255,.35)",fontSize:11}}>{req.date}</p>
@@ -665,12 +780,8 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
                       <span style={{color:YELLOW,fontWeight:700,fontSize:14}}>{req.amount} cr.</span>
                       {req.status==="pending"?(
                         <div style={{display:"flex",gap:5}}>
-                          <button onClick={()=>approveCredit(req.id)} style={{background:"rgba(0,200,83,.1)",
-                            border:"1px solid rgba(0,200,83,.28)",color:"#00C853",padding:"4px 9px",
-                            borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}>✓</button>
-                          <button onClick={()=>rejectCredit(req.id)} style={{background:"rgba(255,50,50,.08)",
-                            border:"1px solid rgba(255,50,50,.22)",color:"#FF6464",padding:"4px 9px",
-                            borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}>✗</button>
+                          <button onClick={()=>approveCredit(req.id)} style={{background:"rgba(0,200,83,.1)",border:"1px solid rgba(0,200,83,.28)",color:"#00C853",padding:"4px 9px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}>✓</button>
+                          <button onClick={()=>rejectCredit(req.id)} style={{background:"rgba(255,50,50,.08)",border:"1px solid rgba(255,50,50,.22)",color:"#FF6464",padding:"4px 9px",borderRadius:5,cursor:"pointer",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}>✗</button>
                         </div>
                       ):<span style={{color:"#00C853",fontSize:12}}>✓ Aprobado</span>}
                     </div>
@@ -678,7 +789,6 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
                 </div>
               )}
             </div>
-            {/* Create rifa */}
             <div style={{background:"#0d0d14",border:"1px solid rgba(255,255,255,.07)",borderRadius:12,padding:"18px"}}>
               <h3 style={{color:"#fff",fontSize:14,fontFamily:"'Cinzel',serif",marginBottom:14}}>Crear rifa</h3>
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -688,6 +798,7 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
                   <input value={newRifa.prize} onChange={e=>setNewRifa(p=>({...p,prize:e.target.value}))} placeholder="Premio (ej: $50,000)" style={inputStyle}/>
                   <input type="number" value={newRifa.pricePerNumber} onChange={e=>setNewRifa(p=>({...p,pricePerNumber:+e.target.value}))} placeholder="Costo/número" style={inputStyle}/>
                 </div>
+                <input type="date" value={newRifa.drawDate} onChange={e=>setNewRifa(p=>({...p,drawDate:e.target.value}))} style={inputStyle}/>
                 <button onClick={createRifa} style={{
                   background:newRifa.name&&newRifa.prize?`linear-gradient(135deg,${YELLOW2},${YELLOW})`:"rgba(255,255,255,.04)",
                   border:"none",borderRadius:8,padding:"10px",
@@ -698,18 +809,16 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
                 </button>
               </div>
             </div>
-            {/* Rifa stats */}
             <div style={{gridColumn:"1/-1",background:"#0d0d14",border:"1px solid rgba(255,255,255,.07)",borderRadius:12,padding:"18px"}}>
               <h3 style={{color:"#fff",fontSize:14,fontFamily:"'Cinzel',serif",marginBottom:14}}>Estado de rifas</h3>
               <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10}}>
                 {[
-                  {label:"Activas",         val:rifas.filter(r=>r.status==="active").length,  c:"#00C853"},
-                  {label:"En sorteo",       val:0,                                              c:YELLOW},
-                  {label:"Disponibles hoy", val:rifas.filter(r=>r.status==="active").length,   c:"#4ECDC4"},
-                  {label:"Totales",         val:rifas.length,                                   c:"rgba(255,255,255,.55)"},
+                  {label:"Activas",         val:rifas.filter(r=>r.status==="active").length, c:"#00C853"},
+                  {label:"En sorteo",       val:0,                                            c:YELLOW},
+                  {label:"Disponibles hoy", val:rifas.filter(r=>r.status==="active").length,  c:"#4ECDC4"},
+                  {label:"Totales",         val:rifas.length,                                  c:"rgba(255,255,255,.55)"},
                 ].map(s=>(
-                  <div key={s.label} style={{background:"rgba(255,255,255,.02)",border:`1px solid ${s.c}18`,
-                    borderRadius:8,padding:"12px",textAlign:"center"}}>
+                  <div key={s.label} style={{background:"rgba(255,255,255,.02)",border:`1px solid ${s.c}18`,borderRadius:8,padding:"12px",textAlign:"center"}}>
                     <p style={{color:s.c,fontSize:22,fontWeight:700,marginBottom:2}}>{s.val}</p>
                     <p style={{color:"rgba(255,255,255,.32)",fontSize:10,textTransform:"uppercase",letterSpacing:1}}>{s.label}</p>
                   </div>
@@ -718,23 +827,21 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
             </div>
           </div>
         )}
-
-        {/* Users tab */}
+ 
+        {/* ── Tab: Usuarios ───────────────────────────────────────────── */}
         {tab==="users" && (
           <div style={{background:"#0d0d14",border:"1px solid rgba(255,255,255,.07)",borderRadius:12,overflow:"hidden"}}>
             <table style={{width:"100%",borderCollapse:"collapse"}}>
               <thead>
                 <tr style={{borderBottom:"1px solid rgba(255,255,255,.07)"}}>
                   {["","Nombre","Usuario","Rol","Créditos","Acciones"].map(h=>(
-                    <th key={h} style={{padding:"11px 16px",textAlign:"left",color:"rgba(255,255,255,.3)",
-                      fontSize:10,letterSpacing:2,textTransform:"uppercase",fontWeight:600}}>{h}</th>
+                    <th key={h} style={{padding:"11px 16px",textAlign:"left",color:"rgba(255,255,255,.3)",fontSize:10,letterSpacing:2,textTransform:"uppercase",fontWeight:600}}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {users.map((user,i)=>(
-                  <tr key={user.id} style={{borderBottom:"1px solid rgba(255,255,255,.04)",
-                    background:i%2?"rgba(255,255,255,.01)":"transparent"}}>
+                  <tr key={user.id} style={{borderBottom:"1px solid rgba(255,255,255,.04)",background:i%2?"rgba(255,255,255,.01)":"transparent"}}>
                     <td style={{padding:"10px 16px",fontSize:18}}>{user.avatar}</td>
                     <td style={{padding:"10px 16px",color:"#fff",fontSize:13,fontWeight:600}}>{user.name}</td>
                     <td style={{padding:"10px 16px",color:"rgba(255,255,255,.45)",fontSize:12}}>{user.username}</td>
@@ -751,22 +858,37 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
                         <div style={{display:"flex",gap:5,alignItems:"center"}}>
                           <input type="number" value={editCredits.val}
                             onChange={e=>setEditCredits(p=>({...p,val:e.target.value}))}
-                            onKeyDown={e=>{if(e.key==="Enter"){const v=parseInt(editCredits.val);if(!isNaN(v)&&v>=0){setUsers(prev=>prev.map(u=>u.id===user.id?{...u,credits:v}:u));}setEditCredits({id:null,val:""});}}}
+                            onKeyDown={e=>{if(e.key==="Enter"){const v=parseInt(editCredits.val);if(!isNaN(v)&&v>=0)setUsers(prev=>prev.map(u=>u.id===user.id?{...u,credits:v}:u));setEditCredits({id:null,val:""});}}}
                             style={{...inputStyle,width:80,padding:"3px 8px",fontSize:12}} autoFocus/>
-                          <button onClick={()=>{const v=parseInt(editCredits.val);if(!isNaN(v)&&v>=0){setUsers(prev=>prev.map(u=>u.id===user.id?{...u,credits:v}:u));}setEditCredits({id:null,val:""}); }} style={{background:"rgba(0,200,83,.1)",border:"1px solid rgba(0,200,83,.28)",color:"#00C853",padding:"3px 7px",borderRadius:4,cursor:"pointer",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}>✓</button>
-                          <button onClick={()=>setEditCredits({id:null,val:""})} style={{background:"rgba(255,50,50,.08)",border:"1px solid rgba(255,50,50,.22)",color:"#FF6464",padding:"3px 7px",borderRadius:4,cursor:"pointer",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}>✗</button>
+                          <button onClick={()=>{const v=parseInt(editCredits.val);if(!isNaN(v)&&v>=0)setUsers(prev=>prev.map(u=>u.id===user.id?{...u,credits:v}:u));setEditCredits({id:null,val:""}); }}
+                            style={{background:"rgba(0,200,83,.1)",border:"1px solid rgba(0,200,83,.28)",color:"#00C853",padding:"3px 7px",borderRadius:4,cursor:"pointer",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}>✓</button>
+                          <button onClick={()=>setEditCredits({id:null,val:""})}
+                            style={{background:"rgba(255,50,50,.08)",border:"1px solid rgba(255,50,50,.22)",color:"#FF6464",padding:"3px 7px",borderRadius:4,cursor:"pointer",fontSize:12,fontFamily:"'Barlow Condensed',sans-serif"}}>✗</button>
                         </div>
                       ):(
                         <span style={{color:YELLOW,fontWeight:700,fontSize:14}}>{user.credits.toLocaleString()}</span>
                       )}
                     </td>
                     <td style={{padding:"10px 16px"}}>
-                      <button onClick={()=>setEditCredits({id:user.id,val:String(user.credits)})}
-                        style={{background:"rgba(255,215,0,.07)",border:"1px solid rgba(255,215,0,.2)",
-                          color:YELLOW,padding:"4px 10px",borderRadius:5,cursor:"pointer",fontSize:11,
-                          fontFamily:"'Barlow Condensed',sans-serif"}}>
-                        ✏ Editar
-                      </button>
+                      <div style={{display:"flex",gap:6}}>
+                        <button onClick={()=>setEditCredits({id:user.id,val:String(user.credits)})}
+                          title="Editar créditos"
+                          style={{background:"rgba(255,215,0,.07)",border:"1px solid rgba(255,215,0,.2)",color:YELLOW,padding:"5px 10px",borderRadius:5,cursor:"pointer",fontSize:13,fontFamily:"'Barlow Condensed',sans-serif"}}>
+                          💰
+                        </button>
+                        <button onClick={()=>setEditUser({id:user.id,name:user.name,username:user.username,password:user.password})}
+                          title="Editar usuario"
+                          style={{background:"rgba(78,205,196,.07)",border:"1px solid rgba(78,205,196,.2)",color:"#4ECDC4",padding:"5px 10px",borderRadius:5,cursor:"pointer",fontSize:13,fontFamily:"'Barlow Condensed',sans-serif"}}>
+                          ✏
+                        </button>
+                        {!user.isAdmin && (
+                          <button onClick={()=>setDeleteConfirm({type:"user",id:user.id})}
+                            title="Eliminar usuario"
+                            style={{background:"rgba(255,50,50,.07)",border:"1px solid rgba(255,50,50,.2)",color:"#FF6464",padding:"5px 10px",borderRadius:5,cursor:"pointer",fontSize:13,fontFamily:"'Barlow Condensed',sans-serif"}}>
+                            🗑
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -774,33 +896,40 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
             </table>
           </div>
         )}
-
-        {/* Rifas tab */}
+ 
+        {/* ── Tab: Rifas ──────────────────────────────────────────────── */}
         {tab==="rifas" && (
           <div style={{display:"flex",flexDirection:"column",gap:9}}>
             {rifas.map(rifa=>{
               const sold     = Object.values(rifa.numbers).filter(n=>n.status==="vendido").length;
               const reserved = Object.values(rifa.numbers).filter(n=>n.status==="reservado").length;
               return(
-                <div key={rifa.id} style={{background:"#0d0d14",border:"1px solid rgba(255,255,255,.07)",
-                  borderRadius:10,padding:"13px 18px",display:"flex",alignItems:"center",gap:14}}>
+                <div key={rifa.id} style={{background:"#0d0d14",border:"1px solid rgba(255,255,255,.07)",borderRadius:10,padding:"13px 18px",display:"flex",alignItems:"center",gap:14}}>
                   <span style={{fontSize:24}}>{rifa.icon}</span>
                   <div style={{flex:1}}>
                     <h4 style={{fontFamily:"'Cinzel',serif",color:"#fff",fontSize:13,marginBottom:2}}>{rifa.name}</h4>
-                    <p style={{color:"rgba(255,255,255,.38)",fontSize:12}}>{rifa.pricePerNumber} cr./número · {rifa.prize}</p>
+                    <p style={{color:"rgba(255,255,255,.38)",fontSize:12}}>{rifa.pricePerNumber} cr./número · {rifa.prize} · 📅 {rifa.drawDate||"Sin fecha"}</p>
                   </div>
-                  {[{label:"Vendidos",val:sold,c:"#00C853"},{label:"Reservados",val:reserved,c:"#FF8C00"},{label:"Libres",val:100-sold-reserved,c:"rgba(255,255,255,.5)"}].map(s=>(
+                  {[
+                    {label:"Vendidos",  val:sold,              c:"#00C853"},
+                    {label:"Reservados",val:reserved,          c:"#FF8C00"},
+                    {label:"Libres",    val:100-sold-reserved, c:"rgba(255,255,255,.5)"},
+                  ].map(s=>(
                     <div key={s.label} style={{textAlign:"center",minWidth:56}}>
                       <p style={{color:s.c,fontWeight:700,fontSize:16}}>{s.val}</p>
                       <p style={{color:"rgba(255,255,255,.28)",fontSize:10}}>{s.label}</p>
                     </div>
                   ))}
-                  <button onClick={()=>setRifas(prev=>prev.filter(r=>r.id!==rifa.id))}
-                    style={{background:"rgba(255,50,50,.07)",border:"1px solid rgba(255,50,50,.2)",
-                      color:"#FF6464",padding:"5px 11px",borderRadius:6,cursor:"pointer",fontSize:11,
-                      fontFamily:"'Barlow Condensed',sans-serif"}}>
-                    Eliminar
-                  </button>
+                  <div style={{display:"flex",gap:6}}>
+                    <button onClick={()=>setEditRifa({...rifa})}
+                      style={{background:"rgba(78,205,196,.07)",border:"1px solid rgba(78,205,196,.2)",color:"#4ECDC4",padding:"5px 11px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"'Barlow Condensed',sans-serif"}}>
+                      ✏ Editar
+                    </button>
+                    <button onClick={()=>setDeleteConfirm({type:"rifa",id:rifa.id})}
+                      style={{background:"rgba(255,50,50,.07)",border:"1px solid rgba(255,50,50,.2)",color:"#FF6464",padding:"5px 11px",borderRadius:6,cursor:"pointer",fontSize:11,fontFamily:"'Barlow Condensed',sans-serif"}}>
+                      🗑 Eliminar
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -810,7 +939,7 @@ function AdminPanel({users, setUsers, rifas, setRifas, creditRequests, setCredit
     </div>
   );
 }
-
+ 
 // ─── Root ──────────────────────────────────────────────────────────────────────
 export default function RifasReal(){
   const [users,          setUsers]          = useState(USERS_INIT);
@@ -823,26 +952,29 @@ export default function RifasReal(){
   const [loginForm,      setLoginForm]      = useState({username:"",password:""});
   const [loginError,     setLoginError]     = useState("");
   const [notif,          setNotif]          = useState(null);
-
+ 
   const toast = useCallback((msg,type="info")=>{
     setNotif({msg,type});
     setTimeout(()=>setNotif(null),2800);
   },[]);
-
+ 
   useEffect(()=>{
     if(currentUser){
       const fresh=users.find(u=>u.id===currentUser.id);
       if(fresh&&JSON.stringify(fresh)!==JSON.stringify(currentUser)) setCurrentUser(fresh);
     }
   },[users]);
-
+ 
   const handleLogin = () => {
     const user=users.find(u=>u.username===loginForm.username&&u.password===loginForm.password);
     if(user){setCurrentUser(user);setView(user.isAdmin?"admin":"lobby");setLoginError("");}
     else setLoginError("Usuario o contraseña incorrectos");
   };
-  const handleLogout = () => {setCurrentUser(null);setView("login");setLoginForm({username:"",password:""});};
-
+ 
+  const handleLogout = () => {
+    setCurrentUser(null);setView("login");setLoginForm({username:"",password:""});
+  };
+ 
   const handleConfirmNumbers = (rifa, numbers) => {
     const total = numbers.length * rifa.pricePerNumber;
     if(currentUser.credits < total){toast("Créditos insuficientes","error");return;}
@@ -858,9 +990,9 @@ export default function RifasReal(){
     toast(`¡${numbers.length} número${numbers.length>1?"s":""} reservado${numbers.length>1?"s":""}!`,"success");
     setView("profile");
   };
-
+ 
   const liveRifa = selectedRifa ? rifas.find(r=>r.id===selectedRifa.id)||selectedRifa : null;
-
+ 
   return(
     <>
       <Toast notif={notif}/>

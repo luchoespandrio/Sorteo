@@ -50,7 +50,7 @@ function loadDB() {
     const raw = localStorage.getItem(DB_KEY);
     if (raw) return JSON.parse(raw);
   } catch(e) {}
-  const initial = { users: USERS_INIT, rifas: RIFAS_INIT, creditRequests: [] };
+  const initial = { users: USERS_INIT, rifas: RIFAS_INIT, creditRequests: [], cortitos: CORTITOS_INIT };
   localStorage.setItem(DB_KEY, JSON.stringify(initial));
   return initial;
 }
@@ -538,262 +538,646 @@ function GameLobby({currentUser, rifas, onSelectRifa, onLogout, onProfile, onAdm
   );
 }
  
-// ─── 2. SOLAPA CORTITOS ───────────────────────────────────────────────────────
-const CORTITOS_GAMES = [
+// ─── Colores de bola ──────────────────────────────────────────────────────────
+const BALL_COLORS = [
+  "#FF6B6B","#FF8C00","#FFD700","#A8E063",
+  "#4ECDC4","#4D96FF","#C77DFF","#FF6CAE","#95E1D3","#F38181",
+];
+const bColor = n => BALL_COLORS[(n - 1) % BALL_COLORS.length];
+ 
+// ─── Data inicial de cortitos ─────────────────────────────────────────────────
+const CORTITOS_INIT = [
   {
-    id: "double",
-    name: "Doble o Nada",
-    icon: "⚡",
-    desc: "50% de chances de duplicar tus créditos",
-    multiplier: 2,
-    winChance: 0.48, // un poquito menos del 50% para que tenga margen
-    color: "#4ECDC4",
-    minBet: 10,
-    maxBet: 500,
+    id: 1, name: "Planilla 1",
+    description: "Completá 5 casilleros para ganar el pozo",
+    costPerSlot: 100, totalSlots: 10, casillerosToWin: 5,
+    bolMin: 1, bolMax: 10,
+    players: [], status: "open", seq: [], winner: null,
   },
   {
-    id: "triple",
-    name: "Triple o Nada",
-    icon: "🔥",
-    desc: "33% de chances de triplicar tus créditos",
-    multiplier: 3,
-    winChance: 0.32,
-    color: "#FF8C00",
-    minBet: 10,
-    maxBet: 300,
+    id: 2, name: "Planilla 2",
+    description: "Doble premio · Más emoción",
+    costPerSlot: 200, totalSlots: 10, casillerosToWin: 5,
+    bolMin: 1, bolMax: 10,
+    players: [], status: "open", seq: [], winner: null,
   },
   {
-    id: "jackpot",
-    name: "Mini Jackpot",
-    icon: "💎",
-    desc: "10% de chances de ganar 8x tus créditos",
-    multiplier: 8,
-    winChance: 0.10,
-    color: YELLOW,
-    minBet: 10,
-    maxBet: 150,
-  },
-  {
-    id: "raspadita",
-    name: "Raspadita",
-    icon: "🎰",
-    desc: "Revelá 3 símbolos — 3 iguales = ganás 5x",
-    multiplier: 5,
-    winChance: 0.18,
-    color: "#E91E8C",
-    minBet: 20,
-    maxBet: 200,
+    id: 3, name: "Planilla 3",
+    description: "Precio accesible · El más jugado",
+    costPerSlot: 50, totalSlots: 10, casillerosToWin: 5,
+    bolMin: 1, bolMax: 10,
+    players: [], status: "open", seq: [], winner: null,
   },
 ];
  
-const SYMBOLS = ["🍋", "🍒", "⭐", "🔔", "💎", "🍀"];
+// ─── Status badge ─────────────────────────────────────────────────────────────
+function PlanillaStatusBadge({ cortito }) {
+  const filled = cortito.players.length;
+  const total  = cortito.totalSlots;
  
-function CortitoCard({ game, currentUser, onPlay }) {
-  const [bet, setBet]           = useState(game.minBet);
-  const [result, setResult]     = useState(null); // null | "win" | "lose"
-  const [spinning, setSpinning] = useState(false);
-  const [slots, setSlots]       = useState(["❓", "❓", "❓"]);
-  const [showSlots, setShowSlots] = useState(false);
-  const canAfford = currentUser.credits >= bet;
+  if (cortito.status === "finished") {
+    return (
+      <span style={{
+        padding: "3px 12px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+        background: "rgba(255,80,80,.1)", border: "1px solid rgba(255,80,80,.3)",
+        color: "#FF6B6B", letterSpacing: .3, whiteSpace: "nowrap",
+      }}>
+        Finalizada · Ganador definido
+      </span>
+    );
+  }
+  if (cortito.status === "running") {
+    return (
+      <span style={{
+        padding: "3px 12px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+        background: "rgba(255,215,0,.1)", border: "1px solid rgba(255,215,0,.4)",
+        color: YELLOW, letterSpacing: .3, whiteSpace: "nowrap",
+      }}>
+        🎰 Sorteando…
+      </span>
+    );
+  }
+  return (
+    <span style={{
+      padding: "3px 12px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+      background: "rgba(78,205,196,.1)", border: "1px solid rgba(78,205,196,.35)",
+      color: "#4ECDC4", letterSpacing: .3, whiteSpace: "nowrap",
+    }}>
+      {filled}/{total} completa
+    </span>
+  );
+}
  
-  const handlePlay = () => {
-    if (!canAfford || spinning) return;
-    setResult(null);
-    setSpinning(true);
- 
-    if (game.id === "raspadita") {
-      // Animar slots
-      setShowSlots(true);
-      let ticks = 0;
-      const interval = setInterval(() => {
-        setSlots([
-          SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-          SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-          SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
-        ]);
-        ticks++;
-        if (ticks > 14) {
-          clearInterval(interval);
-          const won = Math.random() < game.winChance;
-          const finalSlots = won
-            ? (() => { const s = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; return [s, s, s]; })()
-            : (() => {
-                let a, b, c;
-                do {
-                  a = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-                  b = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-                  c = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-                } while (a === b && b === c);
-                return [a, b, c];
-              })();
-          setSlots(finalSlots);
-          setResult(won ? "win" : "lose");
-          setSpinning(false);
-          onPlay(game, bet, won);
-        }
-      }, 80);
-    } else {
-      // Otros juegos: resultado rápido
-      setTimeout(() => {
-        const won = Math.random() < game.winChance;
-        setResult(won ? "win" : "lose");
-        setSpinning(false);
-        setShowSlots(false);
-        onPlay(game, bet, won);
-      }, 900);
-    }
-  };
- 
-  const resetGame = () => {
-    setResult(null);
-    setSlots(["❓", "❓", "❓"]);
-    setShowSlots(false);
-  };
- 
+// ─── Casillero ────────────────────────────────────────────────────────────────
+function Casillero({ filled }) {
   return (
     <div style={{
-      background: "#0d0d14",
-      border: `1px solid ${result === "win" ? "rgba(0,200,83,.4)" : result === "lose" ? "rgba(255,50,50,.25)" : `${game.color}22`}`,
-      borderRadius: 14, overflow: "hidden",
-      transition: "all .3s",
-      boxShadow: result === "win" ? "0 0 30px rgba(0,200,83,.15)" : "none"
+      width: 22, height: 22, borderRadius: "50%", margin: "0 auto",
+      background: filled ? "rgba(0,200,83,.18)" : "rgba(255,255,255,.04)",
+      border: `1.5px solid ${filled ? "rgba(0,200,83,.55)" : "rgba(255,255,255,.1)"}`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      transition: "background .2s, border-color .2s",
     }}>
-      {/* Header de la carta */}
+      {filled && <span style={{ color: "#00C853", fontSize: 11, fontWeight: 700 }}>✓</span>}
+    </div>
+  );
+}
+ 
+// ─── Planilla Card ────────────────────────────────────────────────────────────
+function PlanillaCard({ cortito, currentUser, onJoinClick, isSelected, onSelect, index }) {
+ 
+  // Contar cuántas veces salió cada número en la secuencia
+  const cas = {};
+  (cortito.seq || []).forEach(n => { cas[n] = (cas[n] || 0) + 1; });
+ 
+  const mySlot    = cortito.players.find(p => p.userId === currentUser.id);
+  const freeSlots = cortito.totalSlots - cortito.players.length;
+  const prize     = cortito.costPerSlot * cortito.totalSlots;
+  const casCols   = Array.from({ length: cortito.casillerosToWin }, (_, i) => i + 1);
+ 
+  return (
+    <div
+      onClick={() => onSelect(cortito.id)}
+      style={{
+        background: isSelected ? "rgba(13,13,28,.98)" : "rgba(10,10,20,.85)",
+        border: `1px solid ${
+          isSelected                    ? "rgba(201,168,76,.42)" :
+          cortito.status === "finished" ? "rgba(255,80,80,.2)"   :
+                                          "rgba(255,255,255,.07)"}`,
+        borderRadius: 14, overflow: "hidden", cursor: "pointer",
+        boxShadow: isSelected ? "0 0 28px rgba(201,168,76,.1)" : "none",
+        transition: "border-color .22s, box-shadow .22s",
+        marginBottom: 16,
+      }}
+    >
+      {/* Cabecera */}
       <div style={{
-        height: 110, background: `linear-gradient(135deg, ${game.color}15, #111)`,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        borderBottom: `1px solid ${game.color}18`, position: "relative", flexDirection: "column", gap: 4
+        padding: "13px 18px", borderBottom: "1px solid rgba(255,255,255,.05)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        gap: 10, flexWrap: "wrap",
       }}>
-        {/* Slots de la raspadita */}
-        {game.id === "raspadita" && showSlots ? (
-          <div style={{ display: "flex", gap: 8 }}>
-            {slots.map((s, i) => (
-              <div key={i} style={{
-                width: 44, height: 44, background: "rgba(0,0,0,.4)",
-                border: `2px solid ${game.color}55`, borderRadius: 8,
-                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
-                transition: spinning ? "none" : "all .4s"
-              }}>{s}</div>
-            ))}
-          </div>
-        ) : (
-          <span style={{
-            fontSize: 50,
-            filter: spinning ? "blur(2px)" : "none",
-            transition: "filter .3s",
-            animation: spinning && game.id !== "raspadita" ? "spin .3s linear infinite" : "none"
-          }}>{result === "win" ? "🏆" : result === "lose" ? "💨" : game.icon}</span>
-        )}
-        <div style={{
-          position: "absolute", top: 10, right: 10, background: `${game.color}20`,
-          border: `1px solid ${game.color}40`, borderRadius: 12, padding: "2px 10px",
-          color: game.color, fontSize: 11, fontWeight: 700
-        }}>
-          {game.multiplier}x
+        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+          <span style={{ fontSize: 16 }}>📋</span>
+          <span style={{ fontFamily: "'Cinzel',serif", color: "#fff", fontSize: 15, fontWeight: 700 }}>
+            {cortito.name}
+          </span>
+          {mySlot && (
+            <span style={{
+              padding: "1px 8px", borderRadius: 8, fontSize: 10, fontWeight: 600,
+              background: "rgba(78,205,196,.1)", border: "1px solid rgba(78,205,196,.3)",
+              color: "#4ECDC4",
+            }}>
+              Mi slot #{mySlot.slotNumber}
+            </span>
+          )}
         </div>
+        <PlanillaStatusBadge cortito={cortito} />
       </div>
  
-      {/* Cuerpo */}
-      <div style={{ padding: "14px 16px" }}>
-        <h3 style={{ fontFamily: "'Cinzel',serif", color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 3 }}>
-          {game.name}
-        </h3>
-        <p style={{ color: "rgba(255,255,255,.38)", fontSize: 12, marginBottom: 14 }}>{game.desc}</p>
+      {/* Tabla */}
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontFamily: "'Barlow Condensed',sans-serif" }}>
+          <thead>
+            <tr style={{ background: "rgba(255,255,255,.025)" }}>
+              <th style={{
+                padding: "8px 10px 8px 18px", textAlign: "center",
+                color: "rgba(255,255,255,.3)", fontSize: 10,
+                letterSpacing: 2, textTransform: "uppercase", width: 38,
+              }}>N°</th>
+              <th style={{
+                padding: "8px 10px", textAlign: "left",
+                color: "rgba(255,255,255,.3)", fontSize: 10,
+                letterSpacing: 2, textTransform: "uppercase",
+              }}>Nombre del jugador</th>
+              {casCols.map(i => (
+                <th key={i} style={{ padding: "6px 4px", textAlign: "center", width: 34 }}>
+                  <div style={{
+                    width: 22, height: 22, borderRadius: "50%",
+                    background: bColor(i),
+                    boxShadow: `0 2px 8px ${bColor(i)}55`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 10, fontWeight: 700, color: "#fff", margin: "0 auto",
+                  }}>
+                    {i}
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: cortito.totalSlots }, (_, i) => {
+              const sn       = i + 1;
+              const player   = cortito.players.find(p => p.slotNumber === sn);
+              const filled   = Math.min(cas[sn] || 0, cortito.casillerosToWin);
+              const isWinner = cortito.winner?.slotNumber === sn;
+              const isMe     = player?.userId === currentUser.id;
  
-        {/* Resultado */}
-        {result && (
-          <div style={{
-            background: result === "win" ? "rgba(0,200,83,.1)" : "rgba(255,50,50,.08)",
-            border: `1px solid ${result === "win" ? "rgba(0,200,83,.3)" : "rgba(255,50,50,.2)"}`,
-            borderRadius: 8, padding: "10px 12px", marginBottom: 12, textAlign: "center"
+              return (
+                <tr key={sn} style={{
+                  borderBottom: "1px solid rgba(255,255,255,.04)",
+                  background: isWinner
+                    ? "rgba(201,168,76,.08)"
+                    : isMe
+                    ? "rgba(78,205,196,.04)"
+                    : i % 2 ? "rgba(255,255,255,.01)" : "transparent",
+                }}>
+                  {/* Número */}
+                  <td style={{ padding: "9px 10px 9px 18px", textAlign: "center" }}>
+                    <div style={{
+                      width: 26, height: 26, borderRadius: "50%", margin: "0 auto",
+                      background: `${bColor(sn)}22`,
+                      border: `1.5px solid ${bColor(sn)}66`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 10, fontWeight: 700, color: bColor(sn),
+                    }}>
+                      {sn}
+                    </div>
+                  </td>
+ 
+                  {/* Nombre */}
+                  <td style={{ padding: "9px 10px" }}>
+                    {player ? (
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {isWinner && <span style={{ fontSize: 13 }}>⭐</span>}
+                        <span style={{ fontSize: 14 }}>{player.avatar}</span>
+                        <span style={{
+                          color: isWinner ? YELLOW : isMe ? "#4ECDC4" : "rgba(255,255,255,.75)",
+                          fontSize: 13, fontWeight: isWinner || isMe ? 600 : 400,
+                        }}>
+                          {player.userName}
+                        </span>
+                        {isMe && <span style={{ color: "rgba(78,205,196,.5)", fontSize: 10 }}>(vos)</span>}
+                      </div>
+                    ) : (
+                      <span style={{ color: "rgba(255,255,255,.2)", fontSize: 12, fontStyle: "italic" }}>
+                        — Vacante —
+                      </span>
+                    )}
+                  </td>
+ 
+                  {/* Casilleros */}
+                  {casCols.map(ci => (
+                    <td key={ci} style={{ padding: "9px 4px", textAlign: "center" }}>
+                      <Casillero filled={ci <= filled} />
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+ 
+      {/* Footer */}
+      <div style={{
+        padding: "10px 18px", borderTop: "1px solid rgba(255,255,255,.04)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        gap: 12, flexWrap: "wrap",
+      }}>
+        <div style={{ display: "flex", gap: 20 }}>
+          {[
+            { label: "Entrada",       value: `${cortito.costPerSlot} cr.`,   color: YELLOW },
+            { label: "Premio",        value: `${prize.toLocaleString()} cr.`, color: "#00C853" },
+            { label: "Disponibles",   value: `${freeSlots} slots`,           color: "rgba(255,255,255,.45)" },
+          ].map(s => (
+            <div key={s.label}>
+              <div style={{ color: "rgba(255,255,255,.28)", fontSize: 9, textTransform: "uppercase", letterSpacing: 1, marginBottom: 1 }}>
+                {s.label}
+              </div>
+              <div style={{ color: s.color, fontWeight: 700, fontSize: 13 }}>{s.value}</div>
+            </div>
+          ))}
+        </div>
+ 
+        {/* Botón acción */}
+        {cortito.status === "open" && !mySlot && freeSlots > 0 && (
+          <button
+            onClick={e => { e.stopPropagation(); onJoinClick(cortito); }}
+            style={{
+              background: `linear-gradient(135deg,${YELLOW2},${YELLOW})`,
+              border: "none", borderRadius: 8, padding: "8px 20px",
+              color: "#000", fontSize: 12, fontWeight: 700,
+              cursor: "pointer", fontFamily: "'Cinzel',serif",
+              letterSpacing: 1, textTransform: "uppercase",
+            }}
+          >
+            Unirme
+          </button>
+        )}
+        {cortito.status === "open" && !mySlot && freeSlots === 0 && (
+          <span style={{ color: "rgba(255,255,255,.3)", fontSize: 12 }}>Planilla completa</span>
+        )}
+        {mySlot && cortito.status === "open" && (
+          <span style={{
+            color: "#4ECDC4", fontSize: 12, fontWeight: 600,
+            padding: "6px 14px", borderRadius: 7,
+            background: "rgba(78,205,196,.08)",
+            border: "1px solid rgba(78,205,196,.25)",
           }}>
-            {result === "win" ? (
-              <>
-                <p style={{ color: "#00C853", fontWeight: 700, fontSize: 15 }}>🎉 ¡Ganaste!</p>
-                <p style={{ color: "rgba(255,255,255,.5)", fontSize: 12 }}>+{bet * game.multiplier - bet} cr. netos</p>
-              </>
-            ) : (
-              <>
-                <p style={{ color: "#FF6464", fontWeight: 700, fontSize: 14 }}>😔 No fue esta vez</p>
-                <p style={{ color: "rgba(255,255,255,.3)", fontSize: 12 }}>-{bet} cr.</p>
-              </>
-            )}
-          </div>
+            ✓ Inscripto
+          </span>
         )}
- 
-        {/* Selector de apuesta */}
-        {!result && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-              <span style={{ color: "rgba(255,255,255,.38)", fontSize: 11 }}>Tu apuesta</span>
-              <span style={{ color: game.color, fontSize: 12, fontWeight: 700 }}>{bet} cr.</span>
-            </div>
-            <input
-              type="range"
-              min={game.minBet}
-              max={Math.min(game.maxBet, currentUser.credits)}
-              step={10}
-              value={bet}
-              onChange={e => setBet(Number(e.target.value))}
-              style={{ width: "100%", accentColor: game.color, cursor: "pointer" }}
-            />
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-              <span style={{ color: "rgba(255,255,255,.2)", fontSize: 10 }}>{game.minBet} cr.</span>
-              <span style={{ color: "rgba(255,255,255,.2)", fontSize: 10 }}>
-                Ganás: <span style={{ color: game.color }}>+{bet * game.multiplier - bet} cr.</span>
-              </span>
-            </div>
-          </div>
-        )}
- 
-        {/* Botones */}
-        {!result ? (
-          <button
-            onClick={handlePlay}
-            disabled={!canAfford || spinning}
-            style={{
-              width: "100%", padding: "10px",
-              background: canAfford && !spinning ? `linear-gradient(135deg,${game.color}cc,${game.color})` : "rgba(255,255,255,.04)",
-              border: "none", borderRadius: 8,
-              color: canAfford && !spinning ? "#000" : "rgba(255,255,255,.2)",
-              fontSize: 13, fontWeight: 700, cursor: canAfford && !spinning ? "pointer" : "not-allowed",
-              fontFamily: "'Cinzel',serif", letterSpacing: 1,
-              textTransform: "uppercase", transition: "all .2s"
-            }}
-          >
-            {spinning ? "⏳ Jugando..." : canAfford ? "¡Jugar!" : "Sin créditos"}
-          </button>
-        ) : (
-          <button
-            onClick={resetGame}
-            style={{
-              width: "100%", padding: "10px",
-              background: "rgba(255,255,255,.06)", border: `1px solid ${game.color}33`,
-              borderRadius: 8, color: game.color,
-              fontSize: 12, fontWeight: 600, cursor: "pointer",
-              fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: 1
-            }}
-          >
-            Jugar de nuevo
-          </button>
+        {cortito.status === "finished" && cortito.winner && (
+          <span style={{ color: YELLOW, fontSize: 12, fontWeight: 600 }}>
+            🏆 Ganó: {cortito.winner.player?.userName || `Slot #${cortito.winner.slotNumber}`}
+          </span>
         )}
       </div>
     </div>
   );
 }
  
-function CortitosView({ currentUser, onBack, onLogout, onProfile, onLobby, onHowItWorks, onPlay }) {
-  const totalWon  = 0; // podés llevar estadísticas si querés
-  const [sessionStats, setSessionStats] = useState({ played: 0, won: 0, earned: 0 });
+// ─── Modal para elegir slot ───────────────────────────────────────────────────
+function SlotModal({ cortito, currentUser, onConfirm, onClose }) {
+  const [hovered, setHovered] = useState(null);
+  const prize     = cortito.costPerSlot * cortito.totalSlots;
+  const canAfford = currentUser.credits >= cortito.costPerSlot;
  
-  const handlePlay = (game, bet, won) => {
-    const netChange = won ? bet * game.multiplier - bet : -bet;
-    setSessionStats(prev => ({
-      played: prev.played + 1,
-      won:    prev.won + (won ? 1 : 0),
-      earned: prev.earned + netChange,
-    }));
-    onPlay(game, bet, won); // esto actualiza los créditos del usuario en el Root
+  return (
+    <div
+      onClick={e => e.target === e.currentTarget && onClose()}
+      style={{
+        position: "fixed", inset: 0, zIndex: 1000,
+        background: "rgba(0,0,0,.85)", backdropFilter: "blur(8px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "'Barlow Condensed',sans-serif", padding: 20,
+      }}
+    >
+      <div style={{
+        width: "min(460px,100%)", background: "#0a0a18",
+        border: "1px solid rgba(201,168,76,.25)",
+        borderRadius: 16, padding: "28px",
+        boxShadow: "0 20px 60px rgba(0,0,0,.7)",
+      }}>
+        <h2 style={{
+          fontFamily: "'Cinzel',serif", color: "#fff",
+          fontSize: 17, fontWeight: 700, marginBottom: 5,
+        }}>
+          Unirme a {cortito.name}
+        </h2>
+        <p style={{ color: "rgba(255,255,255,.35)", fontSize: 13, marginBottom: 20 }}>
+          Elegí tu slot · Entrada:{" "}
+          <strong style={{ color: YELLOW }}>{cortito.costPerSlot} cr.</strong>
+          {" "}· Premio total:{" "}
+          <strong style={{ color: "#00C853" }}>{prize.toLocaleString()} cr.</strong>
+        </p>
+ 
+        {/* Grilla de slots */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(5,1fr)",
+          gap: 8, marginBottom: 20,
+        }}>
+          {Array.from({ length: cortito.totalSlots }, (_, i) => {
+            const sn     = i + 1;
+            const player = cortito.players.find(p => p.slotNumber === sn);
+            const isFree = !player;
+ 
+            return (
+              <button
+                key={sn}
+                disabled={!isFree || !canAfford}
+                onClick={() => isFree && canAfford && onConfirm(sn)}
+                onMouseEnter={() => setHovered(sn)}
+                onMouseLeave={() => setHovered(null)}
+                title={!isFree ? `Ocupado por ${player.userName}` : `Slot ${sn} — libre`}
+                style={{
+                  aspectRatio: "1", borderRadius: "50%",
+                  background: !isFree
+                    ? "rgba(255,255,255,.04)"
+                    : hovered === sn
+                    ? `${bColor(sn)}33`
+                    : `${bColor(sn)}18`,
+                  border: `2px solid ${!isFree
+                    ? "rgba(255,255,255,.07)"
+                    : hovered === sn
+                    ? bColor(sn)
+                    : `${bColor(sn)}55`}`,
+                  color: !isFree ? "rgba(255,255,255,.2)" : bColor(sn),
+                  cursor: isFree && canAfford ? "pointer" : "not-allowed",
+                  display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center",
+                  gap: 2, padding: "6px 4px",
+                  transition: "all .15s",
+                  transform: hovered === sn && isFree ? "scale(1.1)" : "scale(1)",
+                }}
+              >
+                <span style={{ fontSize: 13, fontWeight: 700, lineHeight: 1 }}>{sn}</span>
+                {!isFree && <span style={{ fontSize: 11 }}>{player.avatar}</span>}
+              </button>
+            );
+          })}
+        </div>
+ 
+        {!canAfford && (
+          <p style={{ color: "#FF6464", fontSize: 12, textAlign: "center", marginBottom: 14 }}>
+            ⚠ Necesitás al menos {cortito.costPerSlot} cr. Tu saldo: {currentUser.credits} cr.
+          </p>
+        )}
+ 
+        <button onClick={onClose} style={{
+          width: "100%", padding: "10px",
+          background: "rgba(255,255,255,.04)",
+          border: "1px solid rgba(255,255,255,.08)",
+          borderRadius: 8, color: "rgba(255,255,255,.45)", fontSize: 13,
+          cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif",
+        }}>
+          Cancelar
+        </button>
+      </div>
+    </div>
+  );
+}
+ 
+// ─── Panel derecho: info + secuencia + verificación ──────────────────────────
+function BolilleroPanel({ cortito }) {
+  const seq = cortito?.seq || [];
+ 
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+ 
+      {/* ── Bolillero automático ── */}
+      <div style={{
+        background: "rgba(10,10,22,.9)",
+        border: "1px solid rgba(201,168,76,.2)",
+        borderRadius: 14, overflow: "hidden",
+      }}>
+        <div style={{
+          padding: "14px 18px",
+          borderBottom: "1px solid rgba(201,168,76,.1)",
+          textAlign: "center",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 5 }}>
+            <span style={{ color: YELLOW, fontSize: 13 }}>✦</span>
+            <span style={{
+              fontFamily: "'Cinzel',serif", color: YELLOW,
+              fontSize: 15, fontWeight: 700, letterSpacing: 2,
+            }}>
+              Bolillero automático
+            </span>
+            <span style={{ color: YELLOW, fontSize: 13 }}>✦</span>
+          </div>
+          <p style={{ color: "rgba(255,255,255,.38)", fontSize: 12, lineHeight: 1.6 }}>
+            El sistema se ejecuta de forma automática y transparente.<br />
+            No necesitás estar conectado para que funcione.
+          </p>
+        </div>
+ 
+        {/* Visual del bolillero */}
+        <div style={{
+          padding: "20px 18px", textAlign: "center",
+          background: "radial-gradient(ellipse at center, rgba(201,168,76,.04) 0%, transparent 70%)",
+        }}>
+          <div style={{ position: "relative", display: "inline-block" }}>
+            {/* Bowl */}
+            <div style={{
+              width: 120, height: 120, borderRadius: "50%",
+              background: "radial-gradient(circle at 38% 32%, #1c1c32, #05050f)",
+              border: "2px solid rgba(201,168,76,.45)",
+              boxShadow: "0 0 30px rgba(201,168,76,.18), inset 0 0 25px rgba(0,0,0,.5)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto", position: "relative", overflow: "hidden",
+            }}>
+              {[0,1,2,3,4,5,6,7].map(i => {
+                const angle = (i / 8) * 360 - 90;
+                const r = 36;
+                return (
+                  <div key={i} style={{
+                    position: "absolute",
+                    left: `calc(50% + ${Math.cos(angle * Math.PI / 180) * r}px - 9px)`,
+                    top:  `calc(50% + ${Math.sin(angle * Math.PI / 180) * r}px - 9px)`,
+                    width: 18, height: 18, borderRadius: "50%",
+                    background: `radial-gradient(circle at 33% 33%, rgba(255,255,255,.3), ${BALL_COLORS[i]})`,
+                    boxShadow: `0 2px 6px rgba(0,0,0,.4)`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 7, fontWeight: 700, color: "#fff",
+                  }}>{i + 1}</div>
+                );
+              })}
+              <div style={{
+                width: 24, height: 24, borderRadius: "50%",
+                background: "rgba(201,168,76,.08)",
+                border: "1px solid rgba(201,168,76,.15)",
+              }} />
+            </div>
+            <div style={{
+              width: 70, height: 7, background: "rgba(201,168,76,.2)",
+              borderRadius: 4, margin: "5px auto 0",
+              border: "1px solid rgba(201,168,76,.2)",
+            }} />
+            <p style={{
+              color: "rgba(255,255,255,.18)", fontSize: 9,
+              letterSpacing: 2, textTransform: "uppercase", marginTop: 5,
+            }}>
+              Sistema automático
+            </p>
+          </div>
+        </div>
+      </div>
+ 
+      {/* ── Secuencia hasta ganar ── */}
+      <div style={{
+        background: "rgba(10,10,22,.9)",
+        border: "1px solid rgba(255,255,255,.07)",
+        borderRadius: 14, padding: "16px 18px",
+      }}>
+        <h3 style={{
+          fontFamily: "'Cinzel',serif", color: "rgba(255,255,255,.7)",
+          fontSize: 13, fontWeight: 600, marginBottom: 12, letterSpacing: 1,
+        }}>
+          Secuencia hasta ganar
+        </h3>
+ 
+        {seq.length === 0 ? (
+          <p style={{ color: "rgba(255,255,255,.2)", fontSize: 12, textAlign: "center", padding: "14px 0" }}>
+            El sorteo arranca cuando la planilla se completa
+          </p>
+        ) : (
+          <>
+            {/* Bolas de la secuencia */}
+            <div style={{
+              display: "flex", flexWrap: "wrap", gap: 4,
+              alignItems: "center", marginBottom: 10,
+            }}>
+              {seq.map((n, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <div style={{
+                    width: 28, height: 28, borderRadius: "50%",
+                    background: `radial-gradient(circle at 33% 33%, rgba(255,255,255,.25), ${bColor(n)})`,
+                    boxShadow: `0 2px 8px ${bColor(n)}55`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 11, fontWeight: 700, color: "#fff",
+                  }}>{n}</div>
+                  {i < seq.length - 1 && (
+                    <span style={{ color: "rgba(255,255,255,.2)", fontSize: 10 }}>→</span>
+                  )}
+                </div>
+              ))}
+            </div>
+ 
+            {cortito?.winner && (
+              <p style={{
+                color: YELLOW, fontSize: 13, fontWeight: 600,
+                padding: "8px 12px", borderRadius: 8,
+                background: "rgba(255,215,0,.07)",
+                border: "1px solid rgba(255,215,0,.2)",
+              }}>
+                El jugador N°{cortito.winner.slotNumber} completó sus {cortito?.casillerosToWin} casilleros 🏆
+              </p>
+            )}
+          </>
+        )}
+      </div>
+ 
+      {/* ── Verificación del ganador ── */}
+      {cortito?.winner && (
+        <div style={{
+          background: "rgba(10,10,22,.9)",
+          border: "1px solid rgba(201,168,76,.25)",
+          borderRadius: 14, overflow: "hidden",
+        }}>
+          <div style={{
+            padding: "11px 18px",
+            borderBottom: "1px solid rgba(201,168,76,.12)",
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <h3 style={{
+              fontFamily: "'Cinzel',serif", color: "rgba(255,255,255,.8)",
+              fontSize: 13, fontWeight: 600, letterSpacing: 1,
+            }}>
+              Verificación del ganador
+            </h3>
+            <span style={{
+              padding: "3px 10px", borderRadius: 10, fontSize: 10, fontWeight: 700,
+              background: "rgba(0,200,83,.12)", border: "1px solid rgba(0,200,83,.35)",
+              color: "#00C853", letterSpacing: 1,
+            }}>
+              ✓ VERIFICADO
+            </span>
+          </div>
+          <div style={{ padding: "14px 18px", display: "flex", flexDirection: "column", gap: 9 }}>
+            {[
+              { label: "Planilla",               value: cortito.name },
+              { label: "Ganador",                value: cortito.winner.player?.userName || `Slot #${cortito.winner.slotNumber}`, gold: true },
+              { label: "Número asignado",        value: cortito.winner.slotNumber, isBall: true },
+              { label: "Casilleros completados", value: `${cortito.casillerosToWin}/${cortito.casillerosToWin}` },
+              { label: "Total extracciones",     value: seq.length },
+              { label: "Secuencia verificada",   value: seq.join(" - "), small: true },
+            ].map(r => (
+              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                <span style={{ color: "rgba(255,255,255,.35)", fontSize: 12, flexShrink: 0 }}>{r.label}</span>
+                {r.isBall ? (
+                  <div style={{
+                    width: 26, height: 26, borderRadius: "50%",
+                    background: bColor(r.value),
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 10, fontWeight: 700, color: "#fff",
+                    boxShadow: `0 2px 8px ${bColor(r.value)}66`,
+                  }}>{r.value}</div>
+                ) : (
+                  <span style={{
+                    color: r.gold ? YELLOW : "rgba(255,255,255,.65)",
+                    fontSize: r.small ? 10 : 12,
+                    fontWeight: r.gold ? 700 : 400,
+                    textAlign: "right", wordBreak: "break-all", maxWidth: "55%",
+                  }}>{r.value}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+ 
+      {/* ── Leyenda de estados ── */}
+      <div style={{
+        background: "rgba(10,10,22,.7)",
+        border: "1px solid rgba(255,255,255,.05)",
+        borderRadius: 12, padding: "13px 16px",
+      }}>
+        <p style={{
+          color: "rgba(255,255,255,.28)", fontSize: 10,
+          textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 10,
+        }}>
+          Estados de las planillas
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {[
+            { color: "#4ECDC4", label: "Abierta",       sub: "Podés completar" },
+            { color: "#4D96FF", label: "Completándose",  sub: "En progreso" },
+            { color: YELLOW,    label: "Sorteando",      sub: "Bolillero en marcha" },
+            { color: "#FF6B6B", label: "Finalizada",     sub: "Ganador definido" },
+          ].map(s => (
+            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 7 }}>
+              <div style={{
+                width: 9, height: 9, borderRadius: "50%",
+                background: s.color, flexShrink: 0,
+                boxShadow: `0 0 5px ${s.color}88`,
+              }} />
+              <div>
+                <div style={{ color: s.color, fontSize: 11, fontWeight: 600 }}>{s.label}</div>
+                <div style={{ color: "rgba(255,255,255,.25)", fontSize: 10 }}>{s.sub}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+ 
+// ─── CortitosView ─────────────────────────────────────────────────────────────
+function CortitosView({ currentUser, db, updateDB, onJoin, onBack, onLogout, onProfile, onLobby, onHowItWorks }) {
+  const cortitos = db.cortitos || CORTITOS_INIT;
+ 
+  const [selectedId, setSelectedId] = useState(cortitos[0]?.id || null);
+  const [joinTarget, setJoinTarget] = useState(null);
+ 
+  const activeCortito = cortitos.find(c => c.id === selectedId) || cortitos[0];
+ 
+  const handleConfirmJoin = slotNumber => {
+    if (!joinTarget) return;
+    onJoin(joinTarget.id, slotNumber);
+    setJoinTarget(null);
+    setSelectedId(joinTarget.id);
   };
  
   return (
@@ -804,89 +1188,75 @@ function CortitosView({ currentUser, onBack, onLogout, onProfile, onLobby, onHow
         onProfile={onProfile}
         onLobby={onLobby}
         onHowItWorks={onHowItWorks}
+        onCortitos={() => {}}
       />
  
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
+      {joinTarget && (
+        <SlotModal
+          cortito={joinTarget}
+          currentUser={currentUser}
+          onConfirm={handleConfirmJoin}
+          onClose={() => setJoinTarget(null)}
+        />
+      )}
+ 
+      <main style={{ maxWidth: 1120, margin: "0 auto", padding: "28px 22px" }}>
+ 
         {/* Título */}
-        <div style={{ marginBottom: 28 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-            <span style={{ fontSize: 28 }}>⚡</span>
-            <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 900, color: "#fff" }}>
-              Cortitos
-            </h1>
-            <div style={{
-              background: "rgba(255,215,0,.1)", border: "1px solid rgba(255,215,0,.3)",
-              borderRadius: 12, padding: "2px 12px", color: YELLOW, fontSize: 11, fontWeight: 700
-            }}>
-              APUESTAS RÁPIDAS
-            </div>
-          </div>
-          <p style={{ color: "rgba(255,255,255,.35)", fontSize: 14 }}>
-            Jugadas instantáneas — resultado al momento. Sin esperas.
+        <div style={{ marginBottom: 20 }}>
+          <h1 style={{
+            fontFamily: "'Cinzel',serif", fontSize: 28, fontWeight: 900,
+            color: "#fff", marginBottom: 6,
+            display: "flex", alignItems: "center", gap: 10,
+          }}>
+            <span style={{ fontSize: 24 }}>⚡</span> Cortitos
+          </h1>
+          <p style={{ color: "rgba(255,255,255,.35)", fontSize: 13, maxWidth: 540, lineHeight: 1.65 }}>
+            Completá una de las {cortitos.length} planillas. Cuando una planilla llega a{" "}
+            {cortitos[0]?.totalSlots}/{cortitos[0]?.totalSlots}, el bolillero automático comienza
+            a sacar números del {cortitos[0]?.bolMin} al {cortitos[0]?.bolMax}.
+            Cada vez que sale tu número, se completa un casillero. Ganás el primero en completar los{" "}
+            {cortitos[0]?.casillerosToWin}.
           </p>
         </div>
  
-        {/* Stats de sesión */}
-        {sessionStats.played > 0 && (
-          <div style={{
-            background: "#0d0d14", border: "1px solid rgba(255,255,255,.07)",
-            borderRadius: 12, padding: "14px 20px", marginBottom: 22,
-            display: "flex", gap: 28, alignItems: "center"
-          }}>
-            <p style={{ color: "rgba(255,255,255,.3)", fontSize: 11, letterSpacing: 2, textTransform: "uppercase" }}>
-              Esta sesión →
-            </p>
-            {[
-              { label: "Jugadas", val: sessionStats.played, color: "#fff" },
-              { label: "Ganadas", val: sessionStats.won, color: "#00C853" },
-              {
-                label: "Balance neto",
-                val: `${sessionStats.earned >= 0 ? "+" : ""}${sessionStats.earned} cr.`,
-                color: sessionStats.earned >= 0 ? "#00C853" : "#FF6464"
-              },
-            ].map(s => (
-              <div key={s.label}>
-                <p style={{ color: "rgba(255,255,255,.3)", fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }}>{s.label}</p>
-                <p style={{ color: s.color, fontWeight: 700, fontSize: 16 }}>{s.val}</p>
-              </div>
+        {/* Layout 2 columnas */}
+        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 22, alignItems: "start" }}>
+ 
+          {/* Izquierda: Planillas */}
+          <div>
+            {cortitos.map((c, i) => (
+              <PlanillaCard
+                key={c.id}
+                cortito={c}
+                currentUser={currentUser}
+                onJoinClick={() => setJoinTarget(c)}
+                isSelected={selectedId === c.id}
+                onSelect={setSelectedId}
+                index={i}
+              />
             ))}
           </div>
-        )}
  
-        {/* Grilla de juegos */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 18 }}>
-          {CORTITOS_GAMES.map(game => (
-            <CortitoCard
-              key={game.id}
-              game={game}
-              currentUser={currentUser}
-              onPlay={handlePlay}
-            />
-          ))}
+          {/* Derecha: Panel bolillero (sticky) */}
+          <div style={{ position: "sticky", top: 78 }}>
+            <BolilleroPanel cortito={activeCortito} />
+          </div>
         </div>
  
-        {/* Aviso responsable */}
-        <div style={{
-          marginTop: 28, background: "rgba(255,100,100,.04)",
-          border: "1px solid rgba(255,100,100,.12)", borderRadius: 10,
-          padding: "14px 20px", display: "flex", gap: 12, alignItems: "center"
+        {/* Pie */}
+        <p style={{
+          color: "rgba(255,255,255,.18)", fontSize: 12,
+          textAlign: "center", marginTop: 24, lineHeight: 1.7,
+          padding: "11px 16px", borderRadius: 8,
+          background: "rgba(255,255,255,.02)",
+          border: "1px solid rgba(255,255,255,.04)",
         }}>
-          <span style={{ fontSize: 18 }}>⚠️</span>
-          <p style={{ color: "rgba(255,255,255,.35)", fontSize: 12, lineHeight: 1.6 }}>
-            Jugá con responsabilidad. Solo mayores de 18 años. Si sentís que el juego es un
-            problema, buscá ayuda. Los resultados son aleatorios.
-          </p>
-        </div>
+          ℹ Cuando una planilla alcanza {cortitos[0]?.totalSlots}/{cortitos[0]?.totalSlots}, el
+          bolillero se ejecuta automáticamente hasta que un jugador completa sus{" "}
+          {cortitos[0]?.casillerosToWin} casilleros y se define al ganador.
+        </p>
       </main>
- 
-      {/* CSS para la animación del spinner */}
-      <style>{`
-        @keyframes spin {
-          0%   { transform: rotate(0deg) scale(1); }
-          50%  { transform: rotate(180deg) scale(0.8); }
-          100% { transform: rotate(360deg) scale(1); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -1791,19 +2161,30 @@ export default function RifasReal(){
     setLoginForm({username:"",password:""});
   };
  
-  const handleCortitoPlay = (game, bet, won) => {
+  const handleCortitoJoin = (cortitoId, slotNumber) => {
+    const cortito = db.cortitos.find(c => c.id === cortitoId);
+    if (!cortito || cortito.status !== "open") return;
+    if (currentUser.credits < cortito.costPerSlot) { toast("Créditos insuficientes","error"); return; }
+    if (cortito.players.find(p => p.slotNumber === slotNumber)) { toast("Ese slot ya está ocupado","warn"); return; }
+    if (cortito.players.find(p => p.userId === currentUser.id)) { toast("Ya tenés un slot en este cortito","warn"); return; }
+
     updateDB(prev => {
-      const delta = won ? bet * game.multiplier - bet : -bet;
       const newUsers = prev.users.map(u =>
-        u.id === currentUser.id ? { ...u, credits: u.credits + delta } : u
+        u.id === currentUser.id ? { ...u, credits: u.credits - cortito.costPerSlot } : u
       );
-      return { ...prev, users: newUsers };
+      const newCortitos = prev.cortitos.map(c => {
+        if (c.id !== cortitoId) return c;
+        const newPlayers = [...c.players, {
+          slotNumber,
+          userId:   currentUser.id,
+          userName: currentUser.name,
+          avatar:   currentUser.avatar,
+        }];
+        return { ...c, players: newPlayers, status: newPlayers.length >= c.totalSlots ? "running" : "open" };
+      });
+      return { ...prev, users: newUsers, cortitos: newCortitos };
     });
-    if (won) {
-      toast(`🎉 ¡Ganaste ${bet * game.multiplier - bet} créditos!`, "success");
-    } else {
-      toast(`Perdiste ${bet} créditos. ¡Suerte la próxima!`, "error");
-    }
+    toast(`¡Te uniste al slot #${slotNumber}!`, "success");
   };
  
   // Lógica de sorteo automático: se dispara cuando todos los números están vendidos
@@ -1972,12 +2353,14 @@ export default function RifasReal(){
          {view==="cortitos" && currentUser && (
      <CortitosView
        currentUser={currentUser}
+       db={db}
+       updateDB={updateDB}
+       onJoin={handleCortitoJoin}
        onBack={() => setView("lobby")}
        onLogout={handleLogout}
        onProfile={() => setView("profile")}
        onLobby={() => setView("lobby")}
        onHowItWorks={() => setView("howItWorks")}
-       onPlay={handleCortitoPlay}
      />
    )}
  

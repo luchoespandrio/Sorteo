@@ -2162,7 +2162,8 @@ export default function RifasReal(){
   };
  
   const handleCortitoJoin = (cortitoId, slotNumber) => {
-    const cortito = db.cortitos.find(c => c.id === cortitoId);
+    const cortitos = db.cortitos || CORTITOS_INIT;
+    const cortito = cortitos.find(c => c.id === cortitoId);
     if (!cortito || cortito.status !== "open") return;
     if (currentUser.credits < cortito.costPerSlot) { toast("Créditos insuficientes","error"); return; }
     if (cortito.players.find(p => p.slotNumber === slotNumber)) { toast("Ese slot ya está ocupado","warn"); return; }
@@ -2172,7 +2173,7 @@ export default function RifasReal(){
       const newUsers = prev.users.map(u =>
         u.id === currentUser.id ? { ...u, credits: u.credits - cortito.costPerSlot } : u
       );
-      const newCortitos = prev.cortitos.map(c => {
+      const newCortitos = (prev.cortitos || CORTITOS_INIT).map(c => {
         if (c.id !== cortitoId) return c;
         const newPlayers = [...c.players, {
           slotNumber,

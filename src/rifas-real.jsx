@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
  
+ 
 const YELLOW  = "#FFD700";
 const YELLOW2 = "#F0B90B";
 const BG      = "#0a0a0f";
@@ -74,7 +75,7 @@ function Toast({notif}){
 }
  
 // ─── Header ────────────────────────────────────────────────────────────────────
-function Header({currentUser, onLogout, onProfile, onLobby, onHowItWorks}){
+function Header({currentUser, onLogout, onProfile, onLobby, onHowItWorks, onCortitos}){
   return(
     <header style={{background:"#0d0d14",borderBottom:"1px solid rgba(255,215,0,.15)",
       padding:"0 24px",height:60,display:"flex",alignItems:"center",
@@ -85,7 +86,7 @@ function Header({currentUser, onLogout, onProfile, onLobby, onHowItWorks}){
         <span style={{fontFamily:"'Cinzel',serif",fontSize:18,fontWeight:400,color:"#fff",letterSpacing:3}}>REAL</span>
       </div>
       <nav style={{display:"flex",gap:4,alignItems:"center"}}>
-        {[["Rifas",onLobby],["Mis Jugadas",onProfile],["Cómo funciona",onHowItWorks]].map(([label,fn])=>(
+        {[["Rifas",onLobby],["⚡ Cortitos",onCortitos],["Mis Jugadas",onProfile],["Cómo funciona",onHowItWorks]].map(([label,fn])=>(
           <button key={label} onClick={fn} style={{background:"transparent",border:"none",
             color:"rgba(255,255,255,.6)",cursor:"pointer",fontSize:13,letterSpacing:.5,
             padding:"6px 12px",borderRadius:6,fontFamily:"'Barlow Condensed',sans-serif"}}
@@ -113,6 +114,125 @@ function Header({currentUser, onLogout, onProfile, onLobby, onHowItWorks}){
           fontFamily:"'Barlow Condensed',sans-serif"}}>Salir</button>
       </div>
     </header>
+  );
+}
+// ─── 1. VERIFICACIÓN DE EDAD (+18) ───────────────────────────────────────────
+function AgeVerificationScreen({ onVerified, onRejected }) {
+  const [checked, setChecked] = useState(false);
+ 
+  return (
+    <div style={{
+      minHeight: "100vh", background: BG, display: "flex", alignItems: "center",
+      justifyContent: "center", fontFamily: "'Barlow Condensed',sans-serif",
+      position: "relative", overflow: "hidden"
+    }}>
+      {/* Fondo decorativo */}
+      <div style={{
+        position: "absolute", inset: 0, opacity: 0.03,
+        backgroundImage: "linear-gradient(rgba(255,215,0,1) 1px,transparent 1px),linear-gradient(90deg,rgba(255,215,0,1) 1px,transparent 1px)",
+        backgroundSize: "50px 50px", pointerEvents: "none"
+      }}/>
+      <div style={{
+        position: "absolute", top: "50%", left: "50%",
+        transform: "translate(-50%,-50%)", width: 700, height: 700,
+        background: "radial-gradient(circle,rgba(255,215,0,.04) 0%,transparent 65%)",
+        borderRadius: "50%", pointerEvents: "none"
+      }}/>
+ 
+      <div style={{
+        width: "min(420px,90vw)", background: "#0d0d14",
+        border: "1px solid rgba(255,215,0,.22)", borderRadius: 16,
+        padding: "44px 36px", textAlign: "center",
+        boxShadow: "0 20px 60px rgba(0,0,0,.5)"
+      }}>
+        {/* Logo */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>🔞</div>
+          <div>
+            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 900, color: YELLOW, letterSpacing: 4 }}>RIFAS</span>
+            <span style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 400, color: "#fff", letterSpacing: 4 }}> REAL</span>
+          </div>
+          <p style={{ color: "rgba(255,255,255,.3)", fontSize: 11, letterSpacing: 3, marginTop: 4, textTransform: "uppercase" }}>
+            Verificación de edad
+          </p>
+        </div>
+ 
+        {/* Aviso */}
+        <div style={{
+          background: "rgba(255,215,0,.06)", border: "1px solid rgba(255,215,0,.18)",
+          borderRadius: 10, padding: "16px 18px", marginBottom: 24
+        }}>
+          <p style={{ color: "rgba(255,255,255,.75)", fontSize: 14, lineHeight: 1.7 }}>
+            Este sitio contiene juegos de azar y está destinado
+            exclusivamente a <strong style={{ color: YELLOW }}>mayores de 18 años</strong>.
+          </p>
+          <p style={{ color: "rgba(255,255,255,.35)", fontSize: 12, marginTop: 8, lineHeight: 1.5 }}>
+            Al ingresar declarás bajo tu responsabilidad que sos mayor de edad
+            según la legislación vigente en tu país.
+          </p>
+        </div>
+ 
+        {/* Checkbox */}
+        <div
+          onClick={() => setChecked(p => !p)}
+          style={{
+            display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
+            background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.07)",
+            borderRadius: 8, padding: "12px 16px", marginBottom: 20, textAlign: "left"
+          }}
+        >
+          <div style={{
+            width: 20, height: 20, borderRadius: 4, flexShrink: 0,
+            border: `2px solid ${checked ? YELLOW : "rgba(255,255,255,.2)"}`,
+            background: checked ? "rgba(255,215,0,.15)" : "transparent",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all .2s"
+          }}>
+            {checked && <span style={{ color: YELLOW, fontSize: 13, fontWeight: 700 }}>✓</span>}
+          </div>
+          <p style={{ color: "rgba(255,255,255,.6)", fontSize: 13, lineHeight: 1.5 }}>
+            Confirmo que tengo <strong style={{ color: "#fff" }}>18 años o más</strong> y acepto los
+            términos del sitio.
+          </p>
+        </div>
+ 
+        {/* Botón entrar */}
+        <button
+          onClick={() => checked && onVerified()}
+          style={{
+            width: "100%", padding: "13px",
+            background: checked ? `linear-gradient(135deg,${YELLOW2},${YELLOW})` : "rgba(255,255,255,.05)",
+            border: checked ? "none" : "1px solid rgba(255,255,255,.08)",
+            borderRadius: 8, color: checked ? "#000" : "rgba(255,255,255,.2)",
+            fontSize: 14, fontWeight: 700, letterSpacing: 2,
+            cursor: checked ? "pointer" : "not-allowed",
+            fontFamily: "'Cinzel',serif", textTransform: "uppercase",
+            marginBottom: 12, transition: "all .25s"
+          }}
+        >
+          {checked ? "Ingresar al sitio →" : "Confirmá tu edad para continuar"}
+        </button>
+ 
+        {/* Botón salir */}
+        <button
+          onClick={onRejected}
+          style={{
+            width: "100%", padding: "10px", background: "transparent",
+            border: "1px solid rgba(255,100,100,.2)", borderRadius: 8,
+            color: "rgba(255,100,100,.5)", fontSize: 12,
+            cursor: "pointer", fontFamily: "'Barlow Condensed',sans-serif",
+            letterSpacing: 1
+          }}
+        >
+          No soy mayor de edad — Salir
+        </button>
+ 
+        <p style={{ color: "rgba(255,255,255,.15)", fontSize: 10, marginTop: 16, lineHeight: 1.6 }}>
+          El juego puede crear dependencia. Jugá responsablemente.
+          Prohibido para menores de 18 años.
+        </p>
+      </div>
+    </div>
   );
 }
  
@@ -350,7 +470,7 @@ function RifaCard({rifa, currentUser, onSelect, delay}){
 }
  
 // ─── Lobby ─────────────────────────────────────────────────────────────────────
-function GameLobby({currentUser, rifas, onSelectRifa, onLogout, onProfile, onAdmin, onHowItWorks}){
+function GameLobby({currentUser, rifas, onSelectRifa, onLogout, onProfile, onAdmin, onHowItWorks, onCortitos}){
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("todas");
   const filtered = rifas.filter(r=>{
@@ -360,7 +480,7 @@ function GameLobby({currentUser, rifas, onSelectRifa, onLogout, onProfile, onAdm
   });
   return(
     <div style={{minHeight:"100vh",background:BG,fontFamily:"'Barlow Condensed',sans-serif"}}>
-      <Header currentUser={currentUser} onLogout={onLogout} onProfile={onProfile} onLobby={()=>{}} onHowItWorks={onHowItWorks}/>
+      <Header currentUser={currentUser} onLogout={onLogout} onProfile={onProfile} onLobby={()=>{}} onHowItWorks={onHowItWorks} onCortitos={onCortitos}/>
       <main style={{maxWidth:1100,margin:"0 auto",padding:"32px 24px"}}>
         <div style={{marginBottom:24}}>
           <h1 style={{fontFamily:"'Cinzel',serif",fontSize:26,fontWeight:900,color:"#fff",marginBottom:4}}>Rifas Disponibles</h1>
@@ -375,14 +495,32 @@ function GameLobby({currentUser, rifas, onSelectRifa, onLogout, onProfile, onAdm
                 fontFamily:"'Barlow Condensed',sans-serif",boxSizing:"border-box"}}/>
           </div>
           <select value={filter} onChange={e=>setFilter(e.target.value)}
-            style={{background:"#0d0d14",border:"1px solid rgba(255,255,255,.09)",borderRadius:8,
-              padding:"10px 16px",color:"rgba(255,255,255,.5)",fontSize:13,outline:"none",cursor:"pointer",
-              fontFamily:"'Barlow Condensed',sans-serif"}}>
-            <option value="todas">Todas las rifas</option>
-            <option value="active">Activas</option>
-            <option value="finished">Sorteadas</option>
-          </select>
-          {currentUser.isAdmin && (
+  style={{background:"#0d0d14",border:"1px solid rgba(255,255,255,.09)",borderRadius:8,
+    padding:"10px 16px",color:"rgba(255,255,255,.5)",fontSize:13,outline:"none",cursor:"pointer",
+    fontFamily:"'Barlow Condensed',sans-serif"}}>
+  <option value="todas">Todas las rifas</option>
+  <option value="active">Activas</option>
+  <option value="finished">Sorteadas</option>
+</select>
+ 
+<button
+  onClick={onCortitos}
+  style={{
+    background:"rgba(255,215,0,.08)",
+    border:"1px solid rgba(255,215,0,.25)",
+    color:YELLOW,
+    borderRadius:8,
+    padding:"10px 18px",
+    cursor:"pointer",
+    fontSize:13,
+    fontFamily:"'Barlow Condensed',sans-serif",
+    letterSpacing:.5
+  }}
+>
+  🎰 Cortitos
+</button>
+ 
+        {currentUser.isAdmin && (
             <button onClick={onAdmin} style={{background:"rgba(78,205,196,.08)",border:"1px solid rgba(78,205,196,.25)",
               color:"#4ECDC4",borderRadius:8,padding:"10px 18px",cursor:"pointer",fontSize:13,
               fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:.5}}>
@@ -396,6 +534,359 @@ function GameLobby({currentUser, rifas, onSelectRifa, onLogout, onProfile, onAdm
           ))}
         </div>
       </main>
+    </div>
+  );
+}
+ 
+// ─── 2. SOLAPA CORTITOS ───────────────────────────────────────────────────────
+const CORTITOS_GAMES = [
+  {
+    id: "double",
+    name: "Doble o Nada",
+    icon: "⚡",
+    desc: "50% de chances de duplicar tus créditos",
+    multiplier: 2,
+    winChance: 0.48, // un poquito menos del 50% para que tenga margen
+    color: "#4ECDC4",
+    minBet: 10,
+    maxBet: 500,
+  },
+  {
+    id: "triple",
+    name: "Triple o Nada",
+    icon: "🔥",
+    desc: "33% de chances de triplicar tus créditos",
+    multiplier: 3,
+    winChance: 0.32,
+    color: "#FF8C00",
+    minBet: 10,
+    maxBet: 300,
+  },
+  {
+    id: "jackpot",
+    name: "Mini Jackpot",
+    icon: "💎",
+    desc: "10% de chances de ganar 8x tus créditos",
+    multiplier: 8,
+    winChance: 0.10,
+    color: YELLOW,
+    minBet: 10,
+    maxBet: 150,
+  },
+  {
+    id: "raspadita",
+    name: "Raspadita",
+    icon: "🎰",
+    desc: "Revelá 3 símbolos — 3 iguales = ganás 5x",
+    multiplier: 5,
+    winChance: 0.18,
+    color: "#E91E8C",
+    minBet: 20,
+    maxBet: 200,
+  },
+];
+ 
+const SYMBOLS = ["🍋", "🍒", "⭐", "🔔", "💎", "🍀"];
+ 
+function CortitoCard({ game, currentUser, onPlay }) {
+  const [bet, setBet]           = useState(game.minBet);
+  const [result, setResult]     = useState(null); // null | "win" | "lose"
+  const [spinning, setSpinning] = useState(false);
+  const [slots, setSlots]       = useState(["❓", "❓", "❓"]);
+  const [showSlots, setShowSlots] = useState(false);
+  const canAfford = currentUser.credits >= bet;
+ 
+  const handlePlay = () => {
+    if (!canAfford || spinning) return;
+    setResult(null);
+    setSpinning(true);
+ 
+    if (game.id === "raspadita") {
+      // Animar slots
+      setShowSlots(true);
+      let ticks = 0;
+      const interval = setInterval(() => {
+        setSlots([
+          SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+          SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+          SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)],
+        ]);
+        ticks++;
+        if (ticks > 14) {
+          clearInterval(interval);
+          const won = Math.random() < game.winChance;
+          const finalSlots = won
+            ? (() => { const s = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]; return [s, s, s]; })()
+            : (() => {
+                let a, b, c;
+                do {
+                  a = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+                  b = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+                  c = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+                } while (a === b && b === c);
+                return [a, b, c];
+              })();
+          setSlots(finalSlots);
+          setResult(won ? "win" : "lose");
+          setSpinning(false);
+          onPlay(game, bet, won);
+        }
+      }, 80);
+    } else {
+      // Otros juegos: resultado rápido
+      setTimeout(() => {
+        const won = Math.random() < game.winChance;
+        setResult(won ? "win" : "lose");
+        setSpinning(false);
+        setShowSlots(false);
+        onPlay(game, bet, won);
+      }, 900);
+    }
+  };
+ 
+  const resetGame = () => {
+    setResult(null);
+    setSlots(["❓", "❓", "❓"]);
+    setShowSlots(false);
+  };
+ 
+  return (
+    <div style={{
+      background: "#0d0d14",
+      border: `1px solid ${result === "win" ? "rgba(0,200,83,.4)" : result === "lose" ? "rgba(255,50,50,.25)" : `${game.color}22`}`,
+      borderRadius: 14, overflow: "hidden",
+      transition: "all .3s",
+      boxShadow: result === "win" ? "0 0 30px rgba(0,200,83,.15)" : "none"
+    }}>
+      {/* Header de la carta */}
+      <div style={{
+        height: 110, background: `linear-gradient(135deg, ${game.color}15, #111)`,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        borderBottom: `1px solid ${game.color}18`, position: "relative", flexDirection: "column", gap: 4
+      }}>
+        {/* Slots de la raspadita */}
+        {game.id === "raspadita" && showSlots ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            {slots.map((s, i) => (
+              <div key={i} style={{
+                width: 44, height: 44, background: "rgba(0,0,0,.4)",
+                border: `2px solid ${game.color}55`, borderRadius: 8,
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22,
+                transition: spinning ? "none" : "all .4s"
+              }}>{s}</div>
+            ))}
+          </div>
+        ) : (
+          <span style={{
+            fontSize: 50,
+            filter: spinning ? "blur(2px)" : "none",
+            transition: "filter .3s",
+            animation: spinning && game.id !== "raspadita" ? "spin .3s linear infinite" : "none"
+          }}>{result === "win" ? "🏆" : result === "lose" ? "💨" : game.icon}</span>
+        )}
+        <div style={{
+          position: "absolute", top: 10, right: 10, background: `${game.color}20`,
+          border: `1px solid ${game.color}40`, borderRadius: 12, padding: "2px 10px",
+          color: game.color, fontSize: 11, fontWeight: 700
+        }}>
+          {game.multiplier}x
+        </div>
+      </div>
+ 
+      {/* Cuerpo */}
+      <div style={{ padding: "14px 16px" }}>
+        <h3 style={{ fontFamily: "'Cinzel',serif", color: "#fff", fontSize: 14, fontWeight: 700, marginBottom: 3 }}>
+          {game.name}
+        </h3>
+        <p style={{ color: "rgba(255,255,255,.38)", fontSize: 12, marginBottom: 14 }}>{game.desc}</p>
+ 
+        {/* Resultado */}
+        {result && (
+          <div style={{
+            background: result === "win" ? "rgba(0,200,83,.1)" : "rgba(255,50,50,.08)",
+            border: `1px solid ${result === "win" ? "rgba(0,200,83,.3)" : "rgba(255,50,50,.2)"}`,
+            borderRadius: 8, padding: "10px 12px", marginBottom: 12, textAlign: "center"
+          }}>
+            {result === "win" ? (
+              <>
+                <p style={{ color: "#00C853", fontWeight: 700, fontSize: 15 }}>🎉 ¡Ganaste!</p>
+                <p style={{ color: "rgba(255,255,255,.5)", fontSize: 12 }}>+{bet * game.multiplier - bet} cr. netos</p>
+              </>
+            ) : (
+              <>
+                <p style={{ color: "#FF6464", fontWeight: 700, fontSize: 14 }}>😔 No fue esta vez</p>
+                <p style={{ color: "rgba(255,255,255,.3)", fontSize: 12 }}>-{bet} cr.</p>
+              </>
+            )}
+          </div>
+        )}
+ 
+        {/* Selector de apuesta */}
+        {!result && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ color: "rgba(255,255,255,.38)", fontSize: 11 }}>Tu apuesta</span>
+              <span style={{ color: game.color, fontSize: 12, fontWeight: 700 }}>{bet} cr.</span>
+            </div>
+            <input
+              type="range"
+              min={game.minBet}
+              max={Math.min(game.maxBet, currentUser.credits)}
+              step={10}
+              value={bet}
+              onChange={e => setBet(Number(e.target.value))}
+              style={{ width: "100%", accentColor: game.color, cursor: "pointer" }}
+            />
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
+              <span style={{ color: "rgba(255,255,255,.2)", fontSize: 10 }}>{game.minBet} cr.</span>
+              <span style={{ color: "rgba(255,255,255,.2)", fontSize: 10 }}>
+                Ganás: <span style={{ color: game.color }}>+{bet * game.multiplier - bet} cr.</span>
+              </span>
+            </div>
+          </div>
+        )}
+ 
+        {/* Botones */}
+        {!result ? (
+          <button
+            onClick={handlePlay}
+            disabled={!canAfford || spinning}
+            style={{
+              width: "100%", padding: "10px",
+              background: canAfford && !spinning ? `linear-gradient(135deg,${game.color}cc,${game.color})` : "rgba(255,255,255,.04)",
+              border: "none", borderRadius: 8,
+              color: canAfford && !spinning ? "#000" : "rgba(255,255,255,.2)",
+              fontSize: 13, fontWeight: 700, cursor: canAfford && !spinning ? "pointer" : "not-allowed",
+              fontFamily: "'Cinzel',serif", letterSpacing: 1,
+              textTransform: "uppercase", transition: "all .2s"
+            }}
+          >
+            {spinning ? "⏳ Jugando..." : canAfford ? "¡Jugar!" : "Sin créditos"}
+          </button>
+        ) : (
+          <button
+            onClick={resetGame}
+            style={{
+              width: "100%", padding: "10px",
+              background: "rgba(255,255,255,.06)", border: `1px solid ${game.color}33`,
+              borderRadius: 8, color: game.color,
+              fontSize: 12, fontWeight: 600, cursor: "pointer",
+              fontFamily: "'Barlow Condensed',sans-serif", letterSpacing: 1
+            }}
+          >
+            Jugar de nuevo
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+ 
+function CortitosView({ currentUser, onBack, onLogout, onProfile, onLobby, onHowItWorks, onPlay }) {
+  const totalWon  = 0; // podés llevar estadísticas si querés
+  const [sessionStats, setSessionStats] = useState({ played: 0, won: 0, earned: 0 });
+ 
+  const handlePlay = (game, bet, won) => {
+    const netChange = won ? bet * game.multiplier - bet : -bet;
+    setSessionStats(prev => ({
+      played: prev.played + 1,
+      won:    prev.won + (won ? 1 : 0),
+      earned: prev.earned + netChange,
+    }));
+    onPlay(game, bet, won); // esto actualiza los créditos del usuario en el Root
+  };
+ 
+  return (
+    <div style={{ minHeight: "100vh", background: BG, fontFamily: "'Barlow Condensed',sans-serif" }}>
+      <Header
+        currentUser={currentUser}
+        onLogout={onLogout}
+        onProfile={onProfile}
+        onLobby={onLobby}
+        onHowItWorks={onHowItWorks}
+      />
+ 
+      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 24px" }}>
+        {/* Título */}
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+            <span style={{ fontSize: 28 }}>⚡</span>
+            <h1 style={{ fontFamily: "'Cinzel',serif", fontSize: 26, fontWeight: 900, color: "#fff" }}>
+              Cortitos
+            </h1>
+            <div style={{
+              background: "rgba(255,215,0,.1)", border: "1px solid rgba(255,215,0,.3)",
+              borderRadius: 12, padding: "2px 12px", color: YELLOW, fontSize: 11, fontWeight: 700
+            }}>
+              APUESTAS RÁPIDAS
+            </div>
+          </div>
+          <p style={{ color: "rgba(255,255,255,.35)", fontSize: 14 }}>
+            Jugadas instantáneas — resultado al momento. Sin esperas.
+          </p>
+        </div>
+ 
+        {/* Stats de sesión */}
+        {sessionStats.played > 0 && (
+          <div style={{
+            background: "#0d0d14", border: "1px solid rgba(255,255,255,.07)",
+            borderRadius: 12, padding: "14px 20px", marginBottom: 22,
+            display: "flex", gap: 28, alignItems: "center"
+          }}>
+            <p style={{ color: "rgba(255,255,255,.3)", fontSize: 11, letterSpacing: 2, textTransform: "uppercase" }}>
+              Esta sesión →
+            </p>
+            {[
+              { label: "Jugadas", val: sessionStats.played, color: "#fff" },
+              { label: "Ganadas", val: sessionStats.won, color: "#00C853" },
+              {
+                label: "Balance neto",
+                val: `${sessionStats.earned >= 0 ? "+" : ""}${sessionStats.earned} cr.`,
+                color: sessionStats.earned >= 0 ? "#00C853" : "#FF6464"
+              },
+            ].map(s => (
+              <div key={s.label}>
+                <p style={{ color: "rgba(255,255,255,.3)", fontSize: 10, textTransform: "uppercase", letterSpacing: 1 }}>{s.label}</p>
+                <p style={{ color: s.color, fontWeight: 700, fontSize: 16 }}>{s.val}</p>
+              </div>
+            ))}
+          </div>
+        )}
+ 
+        {/* Grilla de juegos */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 18 }}>
+          {CORTITOS_GAMES.map(game => (
+            <CortitoCard
+              key={game.id}
+              game={game}
+              currentUser={currentUser}
+              onPlay={handlePlay}
+            />
+          ))}
+        </div>
+ 
+        {/* Aviso responsable */}
+        <div style={{
+          marginTop: 28, background: "rgba(255,100,100,.04)",
+          border: "1px solid rgba(255,100,100,.12)", borderRadius: 10,
+          padding: "14px 20px", display: "flex", gap: 12, alignItems: "center"
+        }}>
+          <span style={{ fontSize: 18 }}>⚠️</span>
+          <p style={{ color: "rgba(255,255,255,.35)", fontSize: 12, lineHeight: 1.6 }}>
+            Jugá con responsabilidad. Solo mayores de 18 años. Si sentís que el juego es un
+            problema, buscá ayuda. Los resultados son aleatorios.
+          </p>
+        </div>
+      </main>
+ 
+      {/* CSS para la animación del spinner */}
+      <style>{`
+        @keyframes spin {
+          0%   { transform: rotate(0deg) scale(1); }
+          50%  { transform: rotate(180deg) scale(0.8); }
+          100% { transform: rotate(360deg) scale(1); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -1250,7 +1741,7 @@ function AdminPanel({db, setDb, onLogout, onLobby, toast}){
 export default function RifasReal(){
   const [db,          setDb]          = useState(()=>loadDB());
   const [currentUser, setCurrentUser] = useState(null);
-  const [view,        setView]        = useState("login");
+  const [view,        setView]        = useState("ageVerification");
   const [selectedRifa,setSelectedRifa]= useState(null);
   const [confirmData, setConfirmData] = useState(null);
   const [winnerData,  setWinnerData]  = useState(null);
@@ -1298,6 +1789,21 @@ export default function RifasReal(){
     setCurrentUser(null);
     setView("login");
     setLoginForm({username:"",password:""});
+  };
+ 
+  const handleCortitoPlay = (game, bet, won) => {
+    updateDB(prev => {
+      const delta = won ? bet * game.multiplier - bet : -bet;
+      const newUsers = prev.users.map(u =>
+        u.id === currentUser.id ? { ...u, credits: u.credits + delta } : u
+      );
+      return { ...prev, users: newUsers };
+    });
+    if (won) {
+      toast(`🎉 ¡Ganaste ${bet * game.multiplier - bet} créditos!`, "success");
+    } else {
+      toast(`Perdiste ${bet} créditos. ¡Suerte la próxima!`, "error");
+    }
   };
  
   // Lógica de sorteo automático: se dispara cuando todos los números están vendidos
@@ -1380,6 +1886,7 @@ export default function RifasReal(){
     onProfile: ()=>setView("profile"),
     onLobby:   ()=>setView("lobby"),
     onHowItWorks: ()=>setView("howItWorks"),
+    onCortitos: ()=>setView("cortitos"),
   };
  
   return(
@@ -1402,6 +1909,17 @@ export default function RifasReal(){
         />
       )}
  
+      {/* Verificación de edad */}
+       {view==="ageVerification" && (
+     <AgeVerificationScreen
+       onVerified={() => setView("login")}
+       onRejected={() => {
+         document.body.innerHTML = "<div style='display:flex;height:100vh;align-items:center;justify-content:center;background:#0a0a0f;color:rgba(255,255,255,.3);font-family:sans-serif;'>Acceso no permitido para menores de 18 años.</div>";
+       }}
+     />
+   )}
+ 
+ 
       {view==="login" && (
         <LoginScreen form={loginForm} setForm={setLoginForm} onLogin={handleLogin} error={loginError}/>
       )}
@@ -1415,6 +1933,7 @@ export default function RifasReal(){
           onProfile={()=>setView("profile")}
           onAdmin={()=>setView("admin")}
           onHowItWorks={()=>setView("howItWorks")}
+          onCortitos={()=>setView("cortitos")}
         />
       )}
  
@@ -1449,6 +1968,18 @@ export default function RifasReal(){
           onHowItWorks={()=>{}}
         />
       )}
+ 
+         {view==="cortitos" && currentUser && (
+     <CortitosView
+       currentUser={currentUser}
+       onBack={() => setView("lobby")}
+       onLogout={handleLogout}
+       onProfile={() => setView("profile")}
+       onLobby={() => setView("lobby")}
+       onHowItWorks={() => setView("howItWorks")}
+       onPlay={handleCortitoPlay}
+     />
+   )}
  
       {view==="admin" && currentUser && (
         <AdminPanel
